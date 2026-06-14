@@ -11,7 +11,7 @@ services:
     plan: free                 # bump to "starter" to avoid cold-start sleeps
     region: oregon             # pick the region closest to your Supabase project
     rootDir: backend
-    branch: main
+    branch: owner
     # `npm run setup` = prisma generate && prisma db push && seed admin.
     buildCommand: npm install && npm run setup
     startCommand: npm start
