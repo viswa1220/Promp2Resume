@@ -24,6 +24,12 @@ function Builder() {
   const [style, setStyle] = useState({});
 
   const [chat, setChat] = useState("");
+  // Undo/redo: each history entry is the {content, style} snapshot taken BEFORE
+  // an AI edit, with a label describing the edit that followed it.
+  const [history, setHistory] = useState([]);
+  const [redo, setRedo] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const snapshot = (label) => { setHistory((h) => [...h, { content, style, label, ts: Date.now() }]); setRedo([]); };
   const [showTailor, setShowTailor] = useState(false);
   const [showTuning, setShowTuning] = useState(false);
   const [ats, setAts] = useState(null);
@@ -56,28 +62,57 @@ function Builder() {
     setContent(normalizeResume(r.content)); setTemplateId(r.templateId || DEFAULT_TEMPLATE_ID);
     setStyle(r.style || {});
     setVersionId(r.versions?.[0]?.id || null); setAts(null); setSkills(null);
+    setHistory([]); setRedo([]);
     setNotice({ type: "ok", text: `Loaded "${r.title}".` });
   }
   function newResume() {
     setResumeId(null); setVersionId(null); setTitle("Untitled Resume"); setInstructions("");
     setSourceMaterial(""); setJobDescription(""); setContent({ ...EMPTY_RESUME }); setStyle({}); setAts(null); setSkills(null);
+    setHistory([]); setRedo([]);
   }
   const current = () => resumes.find((x) => x.id === resumeId);
+
+  // ---- Undo / redo / revert ----
+  function undo() {
+    if (!history.length) return;
+    const prev = history[history.length - 1];
+    setRedo((r) => [...r, { content, style, label: prev.label }]);
+    setContent(prev.content); setStyle(prev.style);
+    setHistory((h) => h.slice(0, -1));
+    setNotice({ type: "ok", text: `Undid: ${prev.label}` });
+  }
+  function redoLast() {
+    if (!redo.length) return;
+    const next = redo[redo.length - 1];
+    setHistory((h) => [...h, { content, style, label: next.label }]);
+    setContent(next.content); setStyle(next.style);
+    setRedo((r) => r.slice(0, -1));
+    setNotice({ type: "ok", text: `Redid: ${next.label}` });
+  }
+  function revertTo(i) {
+    const target = history[i];
+    if (!target) return;
+    setContent(target.content); setStyle(target.style);
+    setHistory((h) => h.slice(0, i));
+    setRedo([]);
+    setNotice({ type: "ok", text: `Reverted to before: ${target.label}` });
+  }
 
   async function generate() {
     if (!sourceMaterial && !jobDescription && !instructions) { setNotice({ type: "warn", text: "Add your background (or upload a resume), or describe what you want." }); return; }
     bk("gen", true); setNotice(null);
     const { ok, data } = await api.post("/ai/generate", { sourceMaterial, jobDescription, instructions });
     if (!ok) setNotice({ type: "err", text: data?.error });
-    else { setContent(normalizeResume(data.content)); setNotice({ type: "ok", text: "Draft ready. Use the chat box above the resume to tweak anything." }); }
+    else { snapshot("Generate draft"); setContent(normalizeResume(data.content)); setNotice({ type: "ok", text: "Draft ready. Use the chat box above the resume to tweak anything." }); }
     bk("gen", false);
   }
   async function chatEdit() {
     if (!chat.trim()) return;
+    const instruction = chat;
     bk("chat", true); setNotice(null);
-    const { ok, data } = await api.post("/ai/chat", { content, style, instruction: chat, jobDescription });
+    const { ok, data } = await api.post("/ai/chat", { content, style, instruction, jobDescription });
     if (!ok) setNotice({ type: "err", text: data?.error });
-    else { setContent(normalizeResume(data.content)); if (data.style) setStyle(data.style); setChat(""); }
+    else { snapshot(`Chat: "${instruction}"`); setContent(normalizeResume(data.content)); if (data.style) setStyle(data.style); setChat(""); }
     bk("chat", false);
   }
   async function runAts() { bk("ats", true); const { ok, data } = await api.post("/ai/ats", { content, jobDescription }); if (ok) setAts(data); bk("ats", false); }
@@ -225,6 +260,22 @@ function Builder() {
                 <input placeholder='Edit by chat — text OR layout: "two-column", "name bigger & uppercase", "tech on its own line", "accent teal"' value={chat} onChange={(e) => setChat(e.target.value)} onKeyDown={(e) => e.key === "Enter" && chatEdit()} />
                 <button className="btn btn-primary sm" onClick={chatEdit} disabled={busy.chat}>{busy.chat ? <span className="spinner" /> : "Edit"}</button>
               </div>
+              <div className="row wrap" style={{ marginTop: 8, gap: 6 }}>
+                <button className="btn btn-ghost sm" onClick={undo} disabled={!history.length} title={history.length ? `Undo: ${history[history.length - 1].label}` : "Nothing to undo"}>↶ Undo</button>
+                <button className="btn btn-ghost sm" onClick={redoLast} disabled={!redo.length} title={redo.length ? `Redo: ${redo[redo.length - 1].label}` : "Nothing to redo"}>↷ Redo</button>
+                {history.length > 0 && <button className="btn btn-ghost sm" onClick={() => setShowHistory((s) => !s)}>{showHistory ? "Hide history" : `History (${history.length})`}</button>}
+              </div>
+              {showHistory && history.length > 0 && (
+                <div className="edit-history">
+                  {history.map((h, i) => i).reverse().map((i) => (
+                    <div className="eh-item" key={history[i].ts}>
+                      <span className="eh-time">{new Date(history[i].ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                      <span className="eh-label" title={history[i].label}>{history[i].label}</span>
+                      <button className="btn btn-ghost sm" onClick={() => revertTo(i)} title="Revert to before this edit">↶</button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="row wrap between" style={{ marginBottom: 8 }}>
