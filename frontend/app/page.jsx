@@ -129,34 +129,10 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="container section">
-        <h2 className="reveal">Simple pricing</h2>
-        <p className="lead reveal d1">Start free. Upgrade when you're applying everywhere.</p>
-        <div className="price-grid">
-          <div className="price-card reveal">
-            <div className="kicker">Free</div>
-            <div className="amt">$0</div>
-            <ul>
-              <li>AI resume generation</li>
-              <li>ATS score &amp; skill gaps</li>
-              <li>3 downloads / day</li>
-              <li>Application tracker</li>
-            </ul>
-            <Link href="/login?mode=register" className="btn btn-secondary block">Get started</Link>
-          </div>
-          <div className="price-card pro reveal d2">
-            <span className="pill" style={{ position: "absolute", top: 16, right: 16 }}>Most popular</span>
-            <div className="kicker">Pro</div>
-            <div className="amt">$30<span style={{ fontSize: 16, color: "var(--muted)" }}> /mo</span></div>
-            <ul>
-              <li>Everything in Free</li>
-              <li>100 resumes per month</li>
-              <li>Unlimited downloads</li>
-              <li>All 40 templates</li>
-            </ul>
-            <Link href="/pricing" className="btn btn-primary block">Upgrade to Pro</Link>
-          </div>
-        </div>
+      <section className="container section" style={{ textAlign: "center" }}>
+        <h2 className="reveal">Ready when you are</h2>
+        <p className="lead reveal d1">Free to start — describe yourself, generate, and download in minutes.</p>
+        <div className="reveal d2"><Link href="/login?mode=register" className="btn btn-primary">✦ Generate my resume</Link></div>
       </section>
 
       <div className="footer">
