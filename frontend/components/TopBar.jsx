@@ -17,6 +17,7 @@ export default function TopBar({ me: meProp }) {
 
   async function logout() {
     await api.post("/auth/logout");
+    api.clearTokens();
     router.push("/login"); router.refresh();
   }
 

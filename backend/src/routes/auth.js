@@ -28,18 +28,21 @@ r.post("/login", wrap(async (req, res) => {
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
   if (!user || !bcrypt.compareSync(password, user.passwordHash)) return res.status(401).json({ error: "Invalid email or password." });
   if (!user.approved) return res.status(403).json({ error: "Your account is awaiting admin approval." });
-  setAuthCookies(res, user.id);
+  const { token, refreshToken } = setAuthCookies(res, user.id);
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
-  res.json({ ok: true, user: publicUser(user, await downloadStatus(user)) });
+  // token + refreshToken are also returned so header-based clients work without cookies.
+  res.json({ ok: true, token, refreshToken, user: publicUser(user, await downloadStatus(user)) });
 }));
 
 r.post("/refresh", wrap(async (req, res) => {
-  const d = verifyRefresh(req.cookies?.[RT]);
+  // Accept the refresh token from the JSON body (header-based clients) or the cookie.
+  const presented = req.body?.refreshToken || req.cookies?.[RT];
+  const d = verifyRefresh(presented);
   if (!d) { clearAuthCookies(res); return res.status(401).json({ error: "Session expired." }); }
   const user = await prisma.user.findUnique({ where: { id: d.uid } });
   if (!user) { clearAuthCookies(res); return res.status(401).json({ error: "Session expired." }); }
-  setAuthCookies(res, user.id);
-  res.json({ ok: true });
+  const { token, refreshToken } = setAuthCookies(res, user.id);
+  res.json({ ok: true, token, refreshToken });
 }));
 
 r.post("/logout", (req, res) => { clearAuthCookies(res); res.json({ ok: true }); });

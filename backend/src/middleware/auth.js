@@ -2,8 +2,15 @@ import { verifyAccess } from "../lib/jwt.js";
 import { AT } from "../lib/cookies.js";
 import { prisma } from "../db.js";
 
+// Prefer the Authorization: Bearer token; fall back to the httpOnly cookie.
+function getAccessToken(req) {
+  const h = req.headers?.authorization || "";
+  if (h.startsWith("Bearer ")) return h.slice(7).trim();
+  return req.cookies?.[AT] || null;
+}
+
 export async function authRequired(req, res, next) {
-  const d = verifyAccess(req.cookies?.[AT]);
+  const d = verifyAccess(getAccessToken(req));
   if (!d) return res.status(401).json({ error: "Unauthorized" });
   const user = await prisma.user.findUnique({ where: { id: d.uid } });
   if (!user) return res.status(401).json({ error: "Unauthorized" });

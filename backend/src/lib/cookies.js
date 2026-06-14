@@ -1,23 +1,35 @@
 import { signAccess, signRefresh } from "./jwt.js";
 
 const isProd = () => process.env.NODE_ENV === "production";
-// In production the frontend (Vercel) and API (Render) are on different
-// domains, so the auth cookies are cross-site: they MUST be SameSite=None and
-// Secure or the browser will silently drop them on fetch(credentials:"include").
-// Locally we stay on SameSite=Lax over http so cookies work without HTTPS.
+
+// COOKIE_DOMAIN makes the auth cookie first-party across the app and API when
+// they share a registrable domain. e.g. set COOKIE_DOMAIN=".promp2resume.com"
+// with the app on promp2resume.com and the API on api.promp2resume.com — then
+// the cookie is same-site (SameSite=Lax works in every browser, incl. Safari).
+//
+// If COOKIE_DOMAIN is NOT set in production, we assume the app and API are on
+// different sites (cross-site) and fall back to SameSite=None;Secure — note
+// that this is blocked by Safari/strict browsers as a third-party cookie.
+const cookieDomain = () => process.env.COOKIE_DOMAIN || undefined;
 const base = () => ({
   httpOnly: true,
-  sameSite: isProd() ? "none" : "lax",
+  sameSite: isProd() ? (cookieDomain() ? "lax" : "none") : "lax",
   secure: isProd(),
+  domain: isProd() ? cookieDomain() : undefined,
   path: "/",
 });
 
 export const AT = "p2r_at";
 export const RT = "p2r_rt";
 
+// Sets the httpOnly cookies AND returns the tokens so callers can also send
+// them in the JSON body for token-based (Authorization: Bearer) clients.
 export function setAuthCookies(res, uid) {
-  res.cookie(AT, signAccess(uid), { ...base(), maxAge: 15 * 60 * 1000 });
-  res.cookie(RT, signRefresh(uid), { ...base(), maxAge: 30 * 24 * 60 * 60 * 1000 });
+  const token = signAccess(uid);
+  const refreshToken = signRefresh(uid);
+  res.cookie(AT, token, { ...base(), maxAge: 15 * 60 * 1000 });
+  res.cookie(RT, refreshToken, { ...base(), maxAge: 30 * 24 * 60 * 60 * 1000 });
+  return { token, refreshToken };
 }
 
 export function clearAuthCookies(res) {
