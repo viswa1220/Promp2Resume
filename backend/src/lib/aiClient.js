@@ -15,17 +15,23 @@ export class AINotConfiguredError extends Error {
   }
 }
 
-export async function complete({ system, prompt, maxTokens = 3000, temperature = 0.4 }) {
+export async function complete({ system, prompt, maxTokens = 3000, temperature }) {
   const key = process.env.AI_API_KEY;
   if (!key) throw new AINotConfiguredError();
   const client = new AnthropicSDK({ apiKey: key });
-  const res = await client.messages.create({
+  const params = {
     model: MODEL,
     max_tokens: maxTokens,
-    temperature,
     system,
     messages: [{ role: "user", content: prompt }],
-  });
+  };
+  // Newer models (e.g. Opus 4.x) reject the deprecated `temperature` param, so
+  // we omit it by default. Opt back in with AI_ALLOW_TEMPERATURE=1 on a model
+  // that still supports it.
+  if (process.env.AI_ALLOW_TEMPERATURE === "1" && typeof temperature === "number") {
+    params.temperature = temperature;
+  }
+  const res = await client.messages.create(params);
   return res.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
 }
 
