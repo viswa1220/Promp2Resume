@@ -116,6 +116,19 @@ function Builder() {
     bk("chat", false);
   }
   async function runAts() { bk("ats", true); const { ok, data } = await api.post("/ai/ats", { content, jobDescription }); if (ok) setAts(data); bk("ats", false); }
+
+  // Live ATS score: recompute (debounced) whenever the resume or JD changes, so
+  // the score chip next to Save always reflects the current draft. The /ai/ats
+  // endpoint is deterministic and needs no AI key, so this is cheap.
+  useEffect(() => {
+    const hasContent = !!(content && (content.summary || (content.skills || []).length || (content.experience || []).length || (content.projects || []).length));
+    if (!hasContent) { setAts(null); return; }
+    const t = setTimeout(async () => {
+      const { ok, data } = await api.post("/ai/ats", { content, jobDescription });
+      if (ok) setAts(data);
+    }, 600);
+    return () => clearTimeout(t);
+  }, [content, jobDescription]);
   async function runSkills() {
     if (!jobDescription) { setShowTailor(true); setNotice({ type: "warn", text: "Add a job description to analyze skill gaps." }); return; }
     bk("skills", true); setNotice(null);
@@ -281,6 +294,15 @@ function Builder() {
             <div className="row wrap between" style={{ marginBottom: 8 }}>
               <input style={{ maxWidth: 240 }} value={title} onChange={(e) => setTitle(e.target.value)} />
               <div className="btn-row">
+                {ats && (
+                  <span
+                    className="ats-chip"
+                    style={{ "--c": ats.score >= 75 ? "var(--ok)" : ats.score >= 50 ? "var(--warn)" : "var(--danger)" }}
+                    title={`Live ATS score: ${ats.score}/100${ats.grade ? ` (${ats.grade})` : ""}${jobDescription ? "" : " — add a job description for keyword scoring"}`}
+                  >
+                    <b>ATS {ats.score}</b><span className="ats-of">/100</span>
+                  </span>
+                )}
                 <button className="btn btn-secondary sm" onClick={save} disabled={busy.save}>{busy.save ? <span className="spinner" /> : "Save"}</button>
                 <button className="btn btn-secondary sm" onClick={saveVersion} disabled={busy.ver}>{busy.ver ? <span className="spinner" /> : "Save version"}</button>
               </div>
