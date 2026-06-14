@@ -8,12 +8,15 @@ async function main() {
   const email = (process.env.ADMIN_EMAIL || "admin@prompt2resume.local").toLowerCase();
   const password = process.env.ADMIN_PASSWORD || "changeme1234";
 
+  const passwordHash = bcrypt.hashSync(password, 10);
   const admin = await prisma.user.upsert({
     where: { email },
-    update: { role: "admin", approved: true, dailyDownloadLimit: 999 },
-    create: { name: "Admin", email, passwordHash: bcrypt.hashSync(password, 10), role: "admin", approved: true, dailyDownloadLimit: 999, plan: "pro" },
+    // Reset password on every seed so ADMIN_PASSWORD is always authoritative
+    // (lets you recover/rotate the admin login by redeploying).
+    update: { role: "admin", approved: true, dailyDownloadLimit: 999, passwordHash },
+    create: { name: "Admin", email, passwordHash, role: "admin", approved: true, dailyDownloadLimit: 999, plan: "pro" },
   });
-  console.log("Admin ready:", admin.email);
+  console.log("Admin ready:", admin.email, "(password reset from ADMIN_PASSWORD)");
 
   const codes = [
     { code: "MUST@20", type: "daily_unlock", maxUses: 1000 },
