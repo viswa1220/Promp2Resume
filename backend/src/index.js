@@ -19,13 +19,19 @@ const PORT = process.env.PORT || 4000;
 if (process.env.NODE_ENV === "production") app.set("trust proxy", 1);
 
 // Allow a comma-separated list of allowed origins (e.g. prod + preview URLs).
+// Normalize by trimming whitespace and trailing slashes so "https://x.com/"
+// in the env still matches the browser's Origin header "https://x.com".
+const stripSlash = (s) => String(s).trim().replace(/\/+$/, "");
 const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:3000")
-  .split(",").map((s) => s.trim()).filter(Boolean);
+  .split(",").map(stripSlash).filter(Boolean);
+console.log("CORS allowed origins:", allowedOrigins);
 app.use(cors({
   origin(origin, cb) {
     // Allow same-origin/non-browser (no Origin header) and any allowlisted origin.
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-    return cb(new Error(`CORS: origin not allowed: ${origin}`));
+    if (!origin || allowedOrigins.includes(stripSlash(origin))) return cb(null, true);
+    // Clean block (no 500): log the mismatch so it's visible in Render logs.
+    console.warn(`CORS blocked origin: "${origin}" — not in [${allowedOrigins.join(", ")}]`);
+    return cb(null, false);
   },
   credentials: true,
 }));
