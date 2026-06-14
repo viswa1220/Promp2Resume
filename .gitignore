@@ -1,0 +1,9 @@
+# Safety net at repo root (subfolders also have their own .gitignore)
+node_modules/
+.env
+.env.local
+.next/
+out/
+dist/
+*.log
+.DS_Store

@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  name               String    @default("")
+  email              String    @unique
+  passwordHash       String
+  role               String    @default("user") // user | admin
+  approved           Boolean   @default(false)
+  plan               String    @default("free") // free | pro
+  planRenewsAt       DateTime?
+  dailyDownloadLimit Int       @default(3)
+  bonusDownloads     Int       @default(0)
+  bonusExpires       DateTime?
+  createdAt          DateTime  @default(now())
+  lastLoginAt        DateTime?
+
+  resumes      Resume[]
+  versions     ResumeVersion[]
+  downloads    DownloadLog[]
+  applications JobApplication[]
+}
+
+model Resume {
+  id             String   @id @default(cuid())
+  userId         String
+  title          String   @default("Untitled Resume")
+  targetRole     String?
+  sourceMaterial String?
+  jobDescription String?
+  templateId     String   @default("classic")
+  contentJson    Json     @default("{}")
+  styleJson      Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions ResumeVersion[]
+
+  @@index([userId])
+}
+
+model ResumeVersion {
+  id              String   @id @default(cuid())
+  resumeId        String
+  userId          String
+  versionName     String
+  templateId      String   @default("classic")
+  contentJson     Json     @default("{}")
+  styleJson       Json     @default("{}")
+  jobDescription  String?
+  downloadedCount Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  resume       Resume           @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  downloads    DownloadLog[]
+  applications JobApplication[]
+
+  @@index([resumeId])
+}
+
+model DownloadLog {
+  id              String   @id @default(cuid())
+  userId          String
+  resumeVersionId String?
+  fileType        String
+  promoCodeUsed   String?
+  status          String   @default("success") // success | blocked
+  downloadedAt    DateTime @default(now())
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  version ResumeVersion? @relation(fields: [resumeVersionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, downloadedAt])
+}
+
+model PromoCode {
+  id             String    @id @default(cuid())
+  code           String    @unique
+  type           String // one_time | daily_unlock | friend_access
+  maxUses        Int       @default(1)
+  usedCount      Int       @default(0)
+  expiryDate     DateTime?
+  assignedUserId String?
+  status         String    @default("active")
+  createdAt      DateTime  @default(now())
+}
+
+model JobApplication {
+  id              String    @id @default(cuid())
+  userId          String
+  companyName     String    @default("")
+  jobTitle        String    @default("")
+  jobDescription  String?
+  resumeVersionId String?
+  status          String    @default("Saved")
+  dateApplied     DateTime?
+  followUpDate    DateTime?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  version ResumeVersion? @relation(fields: [resumeVersionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}

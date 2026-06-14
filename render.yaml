@@ -1,0 +1,47 @@
+# Render Blueprint for the Prompt2Resume backend (Express + Prisma).
+# In Render: New + > Blueprint, point it at this repo. Render reads this file,
+# creates the service, and prompts you to fill in the secret env values below.
+#
+# The frontend deploys separately on Vercel (see DEPLOY.md) — not from here.
+
+services:
+  - type: web
+    name: prompt2resume-api
+    runtime: node
+    plan: free                 # bump to "starter" to avoid cold-start sleeps
+    region: oregon             # pick the region closest to your Supabase project
+    rootDir: backend
+    branch: main
+    # `npm run setup` = prisma generate && prisma db push && seed admin.
+    buildCommand: npm install && npm run setup
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production       # flips auth cookies to SameSite=None; Secure
+      - key: NODE_VERSION
+        value: "22"
+
+      # --- Secrets: set these in the Render dashboard (sync:false = not in git) ---
+      - key: DATABASE_URL       # Supabase SESSION POOLER URI, port 5432
+        sync: false
+      - key: AI_API_KEY
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      # Comma-separated list of allowed origins (prod + Vercel preview URLs).
+      - key: FRONTEND_URL
+        sync: false
+
+      # --- Auto-generated once and kept stable across deploys ---
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+
+      # --- Optional ---
+      - key: AI_MODEL
+        value: claude-opus-4-8
