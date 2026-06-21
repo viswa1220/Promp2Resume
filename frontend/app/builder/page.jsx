@@ -314,6 +314,31 @@ function Builder() {
             </div>
 
             <div className="resume-frame"><ResumePreview r={content} templateId={templateId} styleOverride={style} /></div>
+
+            {ats && (
+              <div className="card" style={{ marginTop: 12 }}>
+                <div className="row between" style={{ marginBottom: 6 }}>
+                  <strong>ATS score: {ats.score}/100 · {ats.grade}</strong>
+                  {!ats.hasJobDescription && <span className="muted" style={{ fontSize: 12 }}>add a job description for keyword scoring</span>}
+                </div>
+                {ats.tips?.length > 0 ? (
+                  <>
+                    <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Improve your score:</div>
+                    <ul className="checklist">
+                      {ats.tips.slice(0, 6).map((t, i) => (
+                        <li key={i}><span className="ic" style={{ color: "var(--warn)" }}>→</span><span>{t}</span></li>
+                      ))}
+                    </ul>
+                  </>
+                ) : <div className="muted" style={{ fontSize: 13 }}>Looking great — no major issues found. ✅</div>}
+                {ats.missing?.length > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Missing keywords (add truthfully):</div>
+                    <div>{ats.missing.slice(0, 12).map((k) => <span key={k} className="tag miss">{k}</span>)}</div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

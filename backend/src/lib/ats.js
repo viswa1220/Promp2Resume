@@ -69,10 +69,19 @@ export function scoreResume(resumeContent, jobDescription) {
   add(verbRatio >= 0.5, `Bullets starting with a strong action verb: ${strongStart}/${bulletCount || 0}`, verbRatio >= 0.5 ? "" : "Start bullets with action verbs (Led, Built, Reduced...).");
   const impactPts = (bulletCount >= 4 ? 6 : bulletCount > 0 ? 3 : 0) + Math.round(quantRatio * 8) + Math.round(verbRatio * 6);
 
-  const score = Math.max(0, Math.min(100, keywordPts + contactPts + sectionPts + impactPts));
+  // Rescale against what's actually achievable: with no job description the 50
+  // keyword points are unreachable, so we score the rest out of 100 (otherwise a
+  // great resume would cap at ~50 and look "broken").
+  const raw = keywordPts + contactPts + sectionPts + impactPts;
+  const maxPossible = (keywords.length ? 50 : 0) + 12 + 18 + 20;
+  const score = Math.max(0, Math.min(100, Math.round((raw / maxPossible) * 100)));
   const grade = score >= 85 ? "Excellent" : score >= 70 ? "Strong" : score >= 55 ? "Fair" : "Needs work";
+
+  // Actionable improvements = the checks that didn't pass, highest-impact first.
+  const tips = checklist.filter((c) => !c.pass && c.detail).map((c) => c.detail);
+
   return {
-    score, grade,
+    score, grade, tips, hasJobDescription: keywords.length > 0,
     breakdown: { keywords: { points: keywordPts, max: 50 }, contact: { points: contactPts, max: 12 }, sections: { points: sectionPts, max: 18 }, impact: { points: impactPts, max: 20 } },
     matched, missing, checklist,
   };
