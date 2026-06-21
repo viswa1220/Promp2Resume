@@ -43,6 +43,23 @@ app.use(cookieParser());
 
 app.get("/api/health", (req, res) => res.json({ ok: true, service: "prompt2resume", time: new Date().toISOString() }));
 
+// TEMPORARY diagnostic: runs a tiny AI call and reports the raw result/error.
+// Remove after debugging. Open in a browser: /api/ai-debug
+app.get("/api/ai-debug", async (req, res) => {
+  const model = process.env.AI_MODEL || "claude-opus-4-8";
+  const hasKey = !!process.env.AI_API_KEY;
+  if (!hasKey) return res.json({ ok: false, hasKey, model, error: "AI_API_KEY is not set" });
+  try {
+    const { default: Anthropic } = await import("@anthropic-ai/sdk");
+    const client = new Anthropic({ apiKey: process.env.AI_API_KEY, maxRetries: 0, timeout: 60000 });
+    const msg = await client.messages.create({ model, max_tokens: 16, messages: [{ role: "user", content: "Say OK" }] });
+    const text = (msg.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
+    res.json({ ok: true, hasKey, model, sample: text });
+  } catch (e) {
+    res.json({ ok: false, hasKey, model, status: e?.status, name: e?.name, error: String(e?.message || e).slice(0, 400) });
+  }
+});
+
 // Public auth (login/register/refresh/logout); /me is protected inside the router.
 app.use("/api/auth", authRoutes);
 
