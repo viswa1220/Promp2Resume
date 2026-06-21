@@ -51,10 +51,12 @@ app.get("/api/ai-debug", async (req, res) => {
   if (!hasKey) return res.json({ ok: false, hasKey, model, error: "AI_API_KEY is not set" });
   try {
     const { default: Anthropic } = await import("@anthropic-ai/sdk");
-    const client = new Anthropic({ apiKey: process.env.AI_API_KEY, maxRetries: 0, timeout: 60000 });
+    const { anthropicFetch } = await import("./lib/aiFetch.js");
+    const f = await anthropicFetch();
+    const client = new Anthropic({ apiKey: process.env.AI_API_KEY, maxRetries: 0, timeout: 60000, ...(f ? { fetch: f } : {}) });
     const msg = await client.messages.create({ model, max_tokens: 16, messages: [{ role: "user", content: "Say OK" }] });
     const text = (msg.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
-    res.json({ ok: true, hasKey, model, sample: text });
+    res.json({ ok: true, hasKey, model, ipv4: !!f, sample: text });
   } catch (e) {
     res.json({ ok: false, hasKey, model, status: e?.status, name: e?.name, error: String(e?.message || e).slice(0, 400) });
   }

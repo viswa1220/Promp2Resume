@@ -1,4 +1,5 @@
 import AnthropicSDK from "@anthropic-ai/sdk";
+import { anthropicFetch } from "./aiFetch.js";
 
 // AI provider config — server-side only. The key lives in the backend .env
 // (AI_API_KEY); users never see or supply it.
@@ -19,7 +20,9 @@ export async function complete({ system, prompt, maxTokens = 3000, temperature }
   const key = process.env.AI_API_KEY;
   if (!key) throw new AINotConfiguredError();
   // maxRetries handles transient network blips; long timeout for slower models.
-  const client = new AnthropicSDK({ apiKey: key, maxRetries: 3, timeout: 600000 });
+  // Custom fetch forces IPv4 to avoid "Premature close" from broken IPv6 egress.
+  const f = await anthropicFetch();
+  const client = new AnthropicSDK({ apiKey: key, maxRetries: 3, timeout: 600000, ...(f ? { fetch: f } : {}) });
   const params = {
     model: MODEL,
     max_tokens: maxTokens,
