@@ -18,7 +18,8 @@ export class AINotConfiguredError extends Error {
 export async function complete({ system, prompt, maxTokens = 3000, temperature }) {
   const key = process.env.AI_API_KEY;
   if (!key) throw new AINotConfiguredError();
-  const client = new AnthropicSDK({ apiKey: key });
+  // maxRetries handles transient network blips; long timeout for slower models.
+  const client = new AnthropicSDK({ apiKey: key, maxRetries: 3, timeout: 600000 });
   const params = {
     model: MODEL,
     max_tokens: maxTokens,
@@ -31,8 +32,11 @@ export async function complete({ system, prompt, maxTokens = 3000, temperature }
   if (process.env.AI_ALLOW_TEMPERATURE === "1" && typeof temperature === "number") {
     params.temperature = temperature;
   }
-  const res = await client.messages.create(params);
-  return res.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+  // Stream the response: a non-streaming long generation on a slower model can
+  // drop the idle HTTP connection ("Premature close"). Streaming keeps it alive.
+  const stream = client.messages.stream(params);
+  const msg = await stream.finalMessage();
+  return msg.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
 }
 
 export function extractJson(text) {
