@@ -93,10 +93,13 @@ export default function Landing() {
           {[
             ["✦", "Prompt → resume", "Paste notes or an old resume, add a prompt, and get a structured, ATS-clean draft."],
             ["◷", "Real ATS score", "A transparent 0–100 score with a checklist and the exact JD keywords you're missing."],
-            ["✎", "Edit by chat", "“Make the summary punchier.” One line edits any section — now with undo & edit history."],
+            ["✎", "Edit by chat", "“Make the summary punchier.” One line edits any section — with undo & edit history."],
             ["▤", "40 templates", "Single-column, two-column, minimal, executive, technical, long-form CV."],
             ["◆", "Skill-gap coach", "Grouped gaps plus how to learn each one and a portfolio project idea."],
-            ["✓", "Application tracker", "Every download can log itself: company, role, version, status."],
+            ["✓", "Application tracker", "Log every application: company, role, version, status — all in one board."],
+            ["✸", "Learn by building", "Name any tech and get one practical project plus the exact steps to build it."],
+            ["in", "Post to LinkedIn", "Draft a polished LinkedIn post and publish straight to your profile in one click."],
+            ["◴", "Routine planner", "Plan your daily learning, gym and prep — upload, paste, or add tasks in one place."],
           ].map(([ic, h, p], idx) => (
             <div className={`feature reveal d${(idx % 4) + 1}`} key={h}>
               <div className="ic">{ic}</div>
@@ -148,15 +151,26 @@ export default function Landing() {
         </section>
       )}
 
-      <section className="container section" style={{ textAlign: "center" }}>
-        <h2 className="reveal">Ready when you are</h2>
-        <p className="lead reveal d1">Free to start — describe yourself, generate, and download in minutes.</p>
-        <div className="reveal d2"><Link href="/login?mode=register" className="btn btn-primary">✦ Generate my resume</Link></div>
+      <section className="container section">
+        <div className="cta-card reveal">
+          <h2>Ready when you are</h2>
+          <p>Free to start — describe yourself, generate, and download in minutes.</p>
+          <div className="btn-row" style={{ justifyContent: "center" }}>
+            <Link href="/login?mode=register" className="btn btn-primary">✦ Generate my resume</Link>
+            <a href="#how" className="btn btn-secondary">See how it works</a>
+          </div>
+        </div>
       </section>
 
-      <div className="footer">
-        <Logo size={22} /> <span style={{ marginLeft: 8 }}>© {new Date().getFullYear()} Prompt2Resume · Brand kit v1.0</span>
-      </div>
+      <footer className="footer">
+        <Logo size={24} />
+        <nav className="foot-links">
+          <Link href="/login?mode=register">Get started</Link>
+          <a href="#how">How it works</a>
+          <Link href="/login">Log in</Link>
+        </nav>
+        <div className="foot-copy">© {new Date().getFullYear()} Prompt2Resume · Built for job seekers</div>
+      </footer>
     </>
   );
 }
