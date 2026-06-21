@@ -40,11 +40,12 @@ html, body { margin: 0; padding: 0; overflow-x: hidden; max-width: 100%; }
 body {
   background: var(--bg);
   background-image: var(--bg-tint);
-  background-attachment: fixed;
+  background-repeat: no-repeat;
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased;
   position: relative;
+  min-height: 100%;
 }
 h1, h2, h3, h4 { font-family: var(--font-display); margin: 0 0 .5rem; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
 p { margin: 0 0 .7rem; }
