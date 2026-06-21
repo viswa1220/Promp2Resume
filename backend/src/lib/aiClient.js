@@ -34,9 +34,22 @@ export async function complete({ system, prompt, maxTokens = 3000, temperature }
   }
   // Stream the response: a non-streaming long generation on a slower model can
   // drop the idle HTTP connection ("Premature close"). Streaming keeps it alive.
-  const stream = client.messages.stream(params);
-  const msg = await stream.finalMessage();
-  return msg.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+  // We also retry the whole call on transient connection/overload errors, since
+  // a stream that drops mid-response isn't covered by the SDK's auto-retry.
+  const transient = /premature close|econnreset|terminated|aborted|socket hang up|network|fetch failed|overloaded|timeout|esockettimedout|500|502|503|529/i;
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const stream = client.messages.stream(params);
+      const msg = await stream.finalMessage();
+      return msg.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+    } catch (e) {
+      lastErr = e;
+      if (!transient.test(String(e?.message || e))) break;
+      await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+    }
+  }
+  throw new Error("The AI service is busy right now. Please try again in a moment.");
 }
 
 export function extractJson(text) {
