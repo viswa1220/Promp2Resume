@@ -25,23 +25,31 @@ function Typewriter() {
 }
 
 // Reveal-on-scroll: adds `.in` to every `.reveal` once it enters the viewport.
-function useScrollReveal() {
+// Re-scans whenever `dep` changes so async content (e.g. testimonials loaded
+// after mount) gets observed too — otherwise it stays invisible (opacity:0)
+// and leaves a blank gap.
+function useScrollReveal(dep) {
   useEffect(() => {
-    const els = Array.from(document.querySelectorAll(".reveal"));
+    const els = Array.from(document.querySelectorAll(".reveal:not(.in)"));
     if (!("IntersectionObserver" in window)) { els.forEach((e) => e.classList.add("in")); return; }
     const io = new IntersectionObserver((entries) => {
       entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
-    }, { threshold: 0.15 });
+    }, { threshold: 0.12 });
     els.forEach((e) => io.observe(e));
-    return () => io.disconnect();
-  }, []);
+    // Safety net: anything still hidden after 1.2s (observer missed it) is shown.
+    const t = setTimeout(() => document.querySelectorAll(".reveal:not(.in)").forEach((e) => {
+      const r = e.getBoundingClientRect();
+      if (r.top < window.innerHeight) e.classList.add("in");
+    }), 1200);
+    return () => { io.disconnect(); clearTimeout(t); };
+  }, [dep]);
 }
 
 const TEMPLATE_NAMES = ["Classic", "Modern Blue", "Two-Column Sidebar", "Executive", "Technical", "Minimalist", "Academic CV", "Crimson Executive", "Ocean Sidebar", "Charcoal Mono", "Emerald Centered", "Indigo Bar"];
 
 export default function Landing() {
-  useScrollReveal();
   const [testimonials, setTestimonials] = useState([]);
+  useScrollReveal(testimonials.length);
   useEffect(() => { api.get("/testimonials").then(({ ok, data }) => { if (ok) setTestimonials(data.testimonials || []); }); }, []);
   return (
     <>
