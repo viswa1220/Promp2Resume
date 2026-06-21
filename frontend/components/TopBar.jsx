@@ -42,6 +42,9 @@ export default function TopBar({ me: meProp }) {
           {link("/builder", "Builder")}
           {link("/templates", "Templates")}
           {link("/tracker", "Tracker")}
+          {link("/routine", "Routine")}
+          {link("/learn", "Learn")}
+          {link("/linkedin", "LinkedIn")}
           {isAdmin && link("/admin", "Admin")}
           {link("/settings", "Settings")}
         </nav>

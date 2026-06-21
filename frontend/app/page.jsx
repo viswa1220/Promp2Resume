@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Logo, LogoMark } from "@/components/Logo";
+import { api } from "@/lib/api";
 
 const PHRASES = ["build me a resume", "tailor it to this job", "make me stand out"];
 
@@ -40,6 +41,8 @@ const TEMPLATE_NAMES = ["Classic", "Modern Blue", "Two-Column Sidebar", "Executi
 
 export default function Landing() {
   useScrollReveal();
+  const [testimonials, setTestimonials] = useState([]);
+  useEffect(() => { api.get("/testimonials").then(({ ok, data }) => { if (ok) setTestimonials(data.testimonials || []); }); }, []);
   return (
     <>
       <div className="topbar">
@@ -128,6 +131,22 @@ export default function Landing() {
           ))}
         </div>
       </section>
+
+      {testimonials.length > 0 && (
+        <section className="container section">
+          <h2 className="reveal">Loved by job seekers</h2>
+          <p className="lead reveal d1">Real words from people who used Prompt2Resume.</p>
+          <div className="testi-grid">
+            {testimonials.map((t, i) => (
+              <figure className={`testi reveal d${(i % 4) + 1}`} key={i}>
+                <div className="stars">{"★".repeat(t.rating || 5)}</div>
+                <blockquote>{t.text}</blockquote>
+                <figcaption><strong>{t.name}</strong>{t.role ? <span className="muted"> · {t.role}</span> : null}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="container section" style={{ textAlign: "center" }}>
         <h2 className="reveal">Ready when you are</h2>

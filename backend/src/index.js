@@ -11,6 +11,9 @@ import downloadRoutes from "./routes/download.js";
 import trackerRoutes from "./routes/tracker.js";
 import promoRoutes from "./routes/promo.js";
 import adminRoutes from "./routes/admin.js";
+import linkedinRoutes from "./routes/linkedin.js";
+import routineRoutes from "./routes/routine.js";
+import testimonialRoutes, { publicTestimonials } from "./routes/testimonials.js";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -51,6 +54,12 @@ app.use("/api/download", gate, downloadRoutes);
 app.use("/api/tracker", gate, trackerRoutes);
 app.use("/api/promo", gate, promoRoutes);
 app.use("/api/admin", authRequired, adminRoutes);
+// LinkedIn routes guard themselves per-route (the OAuth /callback is a public
+// browser redirect, so the router can't sit behind the global auth gate).
+app.use("/api/linkedin", linkedinRoutes);
+app.use("/api/routine", gate, routineRoutes);
+app.use("/api/testimonials", publicTestimonials); // public GET for landing
+app.use("/api/testimonials", gate, testimonialRoutes); // authed /mine routes
 
 // 404 + error handler
 app.use((req, res) => res.status(404).json({ error: "Not found" }));

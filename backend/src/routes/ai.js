@@ -132,6 +132,53 @@ Stay truthful, concise, ATS-friendly, strong action verbs. Return ONLY minified 
   } catch (e) { aiError(res, e); }
 }));
 
+// ---- Draft a LinkedIn post ----
+r.post("/linkedin", wrap(async (req, res) => {
+  const { topic, notes, tone, photoNote } = req.body || {};
+  if (!topic?.trim() && !notes?.trim() && !photoNote?.trim())
+    return res.status(400).json({ error: "Describe what the post is about." });
+  const prompt = `Write a single LinkedIn post for the author (first person, authentic, no hashtag stuffing).
+TOPIC: ${topic || "(none)"}
+DETAILS/NOTES: ${notes || "(none)"}
+${photoNote ? `PHOTO CONTEXT: ${photoNote}\n` : ""}TONE: ${tone || "professional but warm"}
+
+Rules: hook in the first line; short, skimmable lines; no clickbait; no invented facts;
+2–4 relevant hashtags at the end. Keep under 1300 characters.
+Return ONLY minified JSON: {"post": string, "hashtags": [string]}`;
+  try {
+    const text = await complete({ system: "You are an expert LinkedIn ghostwriter who writes concise, high-engagement posts that sound human.", prompt, maxTokens: 1200 });
+    const j = extractJson(text);
+    res.json({ post: j.post || "", hashtags: Array.isArray(j.hashtags) ? j.hashtags : [] });
+  } catch (e) { aiError(res, e); }
+}));
+
+// ---- Learn a tech: a practical project idea + steps ----
+r.post("/learn", wrap(async (req, res) => {
+  const { tech, level } = req.body || {};
+  if (!tech?.trim()) return res.status(400).json({ error: "Tell me what you want to learn." });
+  const prompt = `The user wants to learn: "${tech}". Skill level: ${level || "beginner"}.
+Give ONE concrete, portfolio-worthy project to learn it by building (not a course list).
+Be practical and specific. Return ONLY minified JSON:
+{
+  "project": string,                // catchy project name
+  "summary": string,                // 1-2 sentences on what they'll build and why it teaches this
+  "whyItTeaches": string,           // what core concepts it forces them to learn
+  "steps": [ { "title": string, "detail": string } ],   // 5-8 build milestones, in order
+  "stretch": [string],              // 2-3 optional stretch goals
+  "skillsGained": [string],         // concrete skills/keywords for a resume
+  "estimate": string                // rough time estimate, e.g. "1-2 weekends"
+}`;
+  try {
+    const text = await complete({ system: "You are a senior engineer and mentor who teaches by building real projects.", prompt, maxTokens: 1600 });
+    const j = extractJson(text);
+    res.json({
+      project: j.project || "", summary: j.summary || "", whyItTeaches: j.whyItTeaches || "",
+      steps: Array.isArray(j.steps) ? j.steps : [], stretch: Array.isArray(j.stretch) ? j.stretch : [],
+      skillsGained: Array.isArray(j.skillsGained) ? j.skillsGained : [], estimate: j.estimate || "",
+    });
+  } catch (e) { aiError(res, e); }
+}));
+
 // ---- Deterministic ATS score (no key needed) ----
 r.post("/ats", (req, res) => {
   const { content, jobDescription } = req.body || {};

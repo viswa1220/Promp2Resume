@@ -22,10 +22,39 @@ model User {
   createdAt          DateTime  @default(now())
   lastLoginAt        DateTime?
 
+  // LinkedIn connection (Share on LinkedIn via OAuth)
+  linkedinToken      String?
+  linkedinUrn        String?
+  linkedinExpiresAt  DateTime?
+
   resumes      Resume[]
   versions     ResumeVersion[]
   downloads    DownloadLog[]
   applications JobApplication[]
+  routineItems RoutineItem[]
+  testimonial  Testimonial?
+}
+
+model RoutineItem {
+  id        String   @id @default(cuid())
+  userId    String
+  text      String
+  category  String   @default("Task") // Task | Learning | Gym | Habit
+  done      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  name      String
+  role      String   @default("")
+  text      String
+  rating    Int      @default(5)
+  approved  Boolean  @default(true) // shown on landing
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Resume {
