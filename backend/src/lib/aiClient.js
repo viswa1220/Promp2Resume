@@ -45,11 +45,15 @@ export async function complete({ system, prompt, maxTokens = 3000, temperature }
       return msg.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
     } catch (e) {
       lastErr = e;
+      console.error(`AI complete() attempt ${attempt + 1} failed [model=${MODEL}] status=${e?.status} name=${e?.name}: ${e?.message}`);
       if (!transient.test(String(e?.message || e))) break;
       await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
     }
   }
-  throw new Error("The AI service is busy right now. Please try again in a moment.");
+  // Surface the real cause (status + short message) so failures are diagnosable.
+  const status = lastErr?.status ? ` [${lastErr.status}]` : "";
+  const reason = String(lastErr?.message || "unknown error").slice(0, 200);
+  throw new Error(`AI request failed${status}: ${reason}`);
 }
 
 export function extractJson(text) {
