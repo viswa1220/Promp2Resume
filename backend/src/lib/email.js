@@ -39,7 +39,7 @@ function getTransporter() {
  * @param {string} text     plain-text body
  * @param {string} [html]   optional HTML body
  */
-export async function sendEmail(to, subject, text, html) {
+export async function sendEmail(to, subject, text, html, replyTo) {
   const t = getTransporter();
   if (!t) {
     console.warn(`[email] skipped — GMAIL_USER/GMAIL_APP_PASSWORD not set. Would have sent "${subject}" to ${to}`);
@@ -51,7 +51,7 @@ export async function sendEmail(to, subject, text, html) {
   }
   try {
     const from = process.env.MAIL_FROM || `Prompt2Resume <${process.env.GMAIL_USER}>`;
-    await t.sendMail({ from, to, subject, text, ...(html ? { html } : {}) });
+    await t.sendMail({ from, to, subject, text, ...(html ? { html } : {}), ...(replyTo ? { replyTo } : {}) });
     console.log(`[email] sent "${subject}" to ${to}`);
     return true;
   } catch (err) {
