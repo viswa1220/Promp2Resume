@@ -1,37 +1,30 @@
 import { Router } from "express";
 import multer from "multer";
+import { prisma } from "../db.js";
 import { wrap } from "../middleware/auth.js";
 import { complete, extractJson, AINotConfiguredError } from "../lib/aiClient.js";
 import { RECRUITER_PERSONA, RESUME_SCHEMA_HINT } from "../lib/recruiter.js";
 import { normalizeResume, resumeToText, SECTION_LABELS } from "../lib/resume.js";
 import { scoreResume } from "../lib/ats.js";
 import { STYLE_SCHEMA, STYLE_DEFAULTS } from "../lib/templates.js";
+import { clampText, validateStyle, preserveContent, GuardError } from "../lib/guard.js";
 
 const r = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
-const aiError = (res, e) => res.status(e instanceof AINotConfiguredError ? 400 : 500).json({ error: e.message });
-
-// Safety net: a layout/style edit must never silently delete content. Unless the
-// user explicitly asked to remove something, restore any section the model
-// blanked out.
-function preserveContent(orig, next, instruction) {
-  const o = normalizeResume(orig), n = normalizeResume(next);
-  if (/\b(remove|delete|clear|drop|take out|get rid|erase|without)\b/i.test(instruction || "")) return n;
-  for (const k of ["skills", "experience", "projects", "education", "certifications", "achievements"]) {
-    if (Array.isArray(o[k]) && o[k].length > 0 && (!Array.isArray(n[k]) || n[k].length === 0)) n[k] = o[k];
-  }
-  if (o.summary && !n.summary) n.summary = o.summary;
-  for (const hk of Object.keys(o.header)) {
-    if (hk === "links") continue;
-    if (o.header[hk] && !n.header[hk]) n.header[hk] = o.header[hk];
-  }
-  if ((o.header.links || []).length && !(n.header.links || []).length) n.header.links = o.header.links;
-  return n;
-}
+const aiError = (res, e) => {
+  // BudgetError carries .status 429; GuardError/AINotConfigured → 400; else 500.
+  const status = e?.status || (e instanceof AINotConfiguredError || e instanceof GuardError ? 400 : 500);
+  res.status(status).json({ error: e.message });
+};
 
 // ---- Generate a full resume ----
 r.post("/generate", wrap(async (req, res) => {
-  const { sourceMaterial, jobDescription, instructions } = req.body || {};
+  let sourceMaterial, jobDescription, instructions;
+  try {
+    sourceMaterial = clampText(req.body?.sourceMaterial, "sourceMaterial");
+    jobDescription = clampText(req.body?.jobDescription, "jobDescription");
+    instructions = clampText(req.body?.instructions, "instruction");
+  } catch (e) { return aiError(res, e); }
   if (!sourceMaterial && !jobDescription && !instructions)
     return res.status(400).json({ error: "Provide your background, a prompt, or a job description." });
   const prompt = `Build a tailored, ATS-friendly resume.
@@ -48,15 +41,20 @@ metrics in the "gaps" array; mirror JD keywords naturally; keep to 1-2 pages.
 
 ${RESUME_SCHEMA_HINT}`;
   try {
-    const text = await complete({ system: RECRUITER_PERSONA, prompt, maxTokens: 3500 });
+    const text = await complete({ system: RECRUITER_PERSONA, prompt, maxTokens: 2800 });
     res.json({ content: normalizeResume(extractJson(text)) });
   } catch (e) { aiError(res, e); }
 }));
 
 // ---- Global chat edit (edit any part by instruction) ----
 r.post("/edit", wrap(async (req, res) => {
-  const { content, instruction, jobDescription } = req.body || {};
-  if (!instruction?.trim()) return res.status(400).json({ error: "Type what you'd like to change." });
+  const { content } = req.body || {};
+  let instruction, jobDescription;
+  try {
+    instruction = clampText(req.body?.instruction, "instruction");
+    jobDescription = clampText(req.body?.jobDescription, "jobDescription");
+  } catch (e) { return aiError(res, e); }
+  if (!instruction) return res.status(400).json({ error: "Type what you'd like to change." });
   const prompt = `Current resume JSON:
 ${JSON.stringify(normalizeResume(content))}
 
@@ -66,15 +64,20 @@ Apply ONLY what they asked; leave everything else unchanged. Stay truthful — n
 never insert bracketed placeholders into resume text (note missing metrics in "gaps"). Return the COMPLETE updated resume.
 ${RESUME_SCHEMA_HINT}`;
   try {
-    const text = await complete({ system: RECRUITER_PERSONA, prompt, maxTokens: 3500 });
+    const text = await complete({ system: RECRUITER_PERSONA, prompt, maxTokens: 2800 });
     res.json({ content: normalizeResume(extractJson(text)) });
   } catch (e) { aiError(res, e); }
 }));
 
 // ---- Unified chat: edits CONTENT and/or LAYOUT from one box ----
 r.post("/chat", wrap(async (req, res) => {
-  const { content, style, instruction, jobDescription } = req.body || {};
-  if (!instruction?.trim()) return res.status(400).json({ error: "Type what you'd like to change." });
+  const { content, style } = req.body || {};
+  let instruction, jobDescription;
+  try {
+    instruction = clampText(req.body?.instruction, "instruction");
+    jobDescription = clampText(req.body?.jobDescription, "jobDescription");
+  } catch (e) { return aiError(res, e); }
+  if (!instruction) return res.status(400).json({ error: "Type what you'd like to change." });
   const curStyle = { ...STYLE_DEFAULTS, ...(style || {}) };
   const prompt = `You control a resume's CONTENT (the words) and its LAYOUT/STYLE (how it looks).
 
@@ -91,11 +94,15 @@ The user said: "${instruction}"
 
 Decide whether they're asking to change wording (content) or appearance/layout (style) — or both —
 and update accordingly. Layout requests map to the STYLE fields above, e.g.:
-- "skills as bullet points / list / columns" -> set "skillsLayout".
-- "put tech on its own line" -> "projectTechPlacement". "two columns" -> "layout".
+- "skills as bullet points / list" -> "skillsLayout":"bullets".
+- "skills in columns / two columns / three columns / 3 columns" -> "skillsLayout":"columns"
+  AND set "skillsColumns" to the number requested (2, 3, or 4). Default to 2 if unspecified.
+- "put tech on its own line" -> "projectTechPlacement". "two-column resume / sidebar" -> "layout":"two-column".
 - "name bigger / uppercase", "accent teal", "dash bullets", "remove section lines",
   "tighter spacing", "center the header" -> the matching style fields.
 A layout request must NOT change the words. Content requests change the resume JSON.
+When a column count is mentioned for a SECTION (e.g. skills), it controls "skillsColumns" only —
+it does NOT change the overall resume "layout".
 
 CRITICAL: Never delete, empty, drop, summarize, or shorten any existing section, skill, bullet,
 or field unless the user EXPLICITLY asked to remove it. If a change is about layout/appearance,
@@ -105,15 +112,25 @@ invent facts and never insert bracketed placeholders into resume text.
 Return ONLY minified JSON with BOTH objects, echoing anything you did not change:
 {"content": <full resume JSON>, "style": <full style object with every field>}`;
   try {
-    const text = await complete({ system: RECRUITER_PERSONA, prompt, maxTokens: 3800, temperature: 0.3 });
+    const text = await complete({ system: RECRUITER_PERSONA, prompt, maxTokens: 3000, temperature: 0.3 });
     const j = extractJson(text);
-    res.json({ content: preserveContent(content, j.content || content, instruction), style: { ...curStyle, ...(j.style || {}) } });
+    // Whitelist/clamp the model's style so it can never corrupt the layout, and
+    // preserve content so a layout edit never drops sections.
+    res.json({
+      content: preserveContent(content, j.content || content, instruction),
+      style: validateStyle(curStyle, j.style || {}),
+    });
   } catch (e) { aiError(res, e); }
 }));
 
 // ---- Rewrite one section ----
 r.post("/section", wrap(async (req, res) => {
-  const { section, currentValue, instruction, jobDescription } = req.body || {};
+  const { section, currentValue } = req.body || {};
+  let instruction, jobDescription;
+  try {
+    instruction = clampText(req.body?.instruction, "instruction");
+    jobDescription = clampText(req.body?.jobDescription, "jobDescription");
+  } catch (e) { return aiError(res, e); }
   if (!section || !SECTION_LABELS[section]) return res.status(400).json({ error: "Unknown section." });
   if (!instruction) return res.status(400).json({ error: "Add an instruction." });
   const shape = section === "summary" ? `{"value": "<rewritten summary string>"}`
@@ -132,30 +149,87 @@ Stay truthful, concise, ATS-friendly, strong action verbs. Return ONLY minified 
   } catch (e) { aiError(res, e); }
 }));
 
-// ---- Draft a LinkedIn post ----
-r.post("/linkedin", wrap(async (req, res) => {
-  const { topic, notes, tone, photoNote } = req.body || {};
-  if (!topic?.trim() && !notes?.trim() && !photoNote?.trim())
-    return res.status(400).json({ error: "Describe what the post is about." });
+// ---- Draft a LinkedIn post (optional screenshot via vision) ----
+// Accepts multipart/form-data: text fields + an optional "image" file the AI
+// reads to describe what was built/achieved. The user copies the result and
+// pastes it into LinkedIn themselves (no API posting).
+const IMG_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+r.post("/linkedin", upload.single("image"), wrap(async (req, res) => {
+  const { tone } = req.body || {};
+  let topic, notes, photoNote;
+  try {
+    topic = clampText(req.body?.topic, "topic");
+    notes = clampText(req.body?.notes, "notes");
+    photoNote = clampText(req.body?.photoNote, "photoNote");
+  } catch (e) { return aiError(res, e); }
+  const hasImage = !!req.file;
+  if (!topic && !notes && !photoNote && !hasImage)
+    return res.status(400).json({ error: "Describe the post or attach a screenshot." });
+
+  let images;
+  if (hasImage) {
+    if (!IMG_TYPES.includes(req.file.mimetype))
+      return res.status(400).json({ error: "Unsupported image type. Use PNG, JPG, GIF, or WebP." });
+    images = [{ media_type: req.file.mimetype, data: req.file.buffer.toString("base64") }];
+  }
+
   const prompt = `Write a single LinkedIn post for the author (first person, authentic, no hashtag stuffing).
-TOPIC: ${topic || "(none)"}
-DETAILS/NOTES: ${notes || "(none)"}
-${photoNote ? `PHOTO CONTEXT: ${photoNote}\n` : ""}TONE: ${tone || "professional but warm"}
+${hasImage ? "A screenshot is attached — use what you can see in it (the product, result, or milestone) to ground the post, but never invent specifics that aren't shown or stated.\n" : ""}TOPIC: ${topic || "(none)"}
+WHAT THEY DID / DETAILS: ${notes || "(none)"}
+${photoNote ? `SCREENSHOT CONTEXT (author's words): ${photoNote}\n` : ""}TONE: ${tone || "professional but warm"}
 
 Rules: hook in the first line; short, skimmable lines; no clickbait; no invented facts;
 2–4 relevant hashtags at the end. Keep under 1300 characters.
 Return ONLY minified JSON: {"post": string, "hashtags": [string]}`;
   try {
-    const text = await complete({ system: "You are an expert LinkedIn ghostwriter who writes concise, high-engagement posts that sound human.", prompt, maxTokens: 1200 });
+    const text = await complete({ system: "You are an expert LinkedIn ghostwriter who writes concise, high-engagement posts that sound human.", prompt, maxTokens: 1200, images });
     const j = extractJson(text);
     res.json({ post: j.post || "", hashtags: Array.isArray(j.hashtags) ? j.hashtags : [] });
   } catch (e) { aiError(res, e); }
 }));
 
+// ---- Refine an existing LinkedIn post (chat turn) ----
+// Takes the current draft + a tweak instruction, returns the updated post plus a
+// one-line note of what changed (for the chat thread).
+r.post("/linkedin/refine", wrap(async (req, res) => {
+  let instruction, current;
+  try {
+    instruction = clampText(req.body?.instruction, "instruction");
+    current = clampText(req.body?.post, "post", 8000);
+  } catch (e) { return aiError(res, e); }
+  if (!current) return res.status(400).json({ error: "There's no post to refine yet — generate one first." });
+  if (!instruction) return res.status(400).json({ error: "Tell me what you'd like to change." });
+  const prompt = `Here is the current LinkedIn post draft:
+"""
+${current}
+"""
+
+The author wants this change: "${instruction}"
+
+Rewrite the post applying ONLY that change. Keep it first-person and authentic, short skimmable
+lines, no clickbait, no invented facts, under 1300 characters, with 2–4 relevant hashtags at the end.
+Return ONLY minified JSON: {"post": string, "hashtags": [string], "reply": string}
+where "reply" is one short sentence telling the author what you changed.`;
+  try {
+    const text = await complete({ system: "You are an expert LinkedIn ghostwriter who edits posts precisely while keeping the author's voice.", prompt, maxTokens: 1200 });
+    const j = extractJson(text);
+    res.json({ post: j.post || "", hashtags: Array.isArray(j.hashtags) ? j.hashtags : [], reply: j.reply || "Updated the post." });
+  } catch (e) { aiError(res, e); }
+}));
+
 // ---- Learn a tech: a practical project idea + steps ----
 r.post("/learn", wrap(async (req, res) => {
-  const { tech, level } = req.body || {};
-  if (!tech?.trim()) return res.status(400).json({ error: "Tell me what you want to learn." });
+  const { level } = req.body || {};
+  let tech;
+  try { tech = clampText(req.body?.tech, "tech"); } catch (e) { return aiError(res, e); }
+  if (!tech) return res.status(400).json({ error: "Tell me what you want to learn." });
+  // Remember the user's learning profile so the daily learning email can be
+  // personalized to it. Opt them into the daily email the first time they use Learn.
+  const lvl = ["beginner", "intermediate", "advanced"].includes(level) ? level : "beginner";
+  prisma.user.update({
+    where: { id: req.user.id },
+    data: { learnTech: tech.trim().slice(0, 120), learnLevel: lvl, dailyLearningEmail: true },
+  }).catch((e) => console.warn("[learn] could not save profile:", e?.message));
   const prompt = `The user wants to learn: "${tech}". Skill level: ${level || "beginner"}.
 Give ONE concrete, portfolio-worthy project to learn it by building (not a course list).
 Be practical and specific. Return ONLY minified JSON:
@@ -187,7 +261,12 @@ r.post("/ats", (req, res) => {
 
 // ---- Skill-gap analysis + learning plan ----
 r.post("/skills", wrap(async (req, res) => {
-  const { content, jobDescription, sourceMaterial } = req.body || {};
+  const { content } = req.body || {};
+  let jobDescription, sourceMaterial;
+  try {
+    jobDescription = clampText(req.body?.jobDescription, "jobDescription");
+    sourceMaterial = clampText(req.body?.sourceMaterial, "sourceMaterial");
+  } catch (e) { return aiError(res, e); }
   if (!jobDescription) return res.status(400).json({ error: "A job description is required for skill analysis." });
   const prompt = `Compare this candidate against the job description; produce an honest skill-gap analysis.
 === RESUME ===

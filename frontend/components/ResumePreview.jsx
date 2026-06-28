@@ -48,8 +48,10 @@ export default function ResumePreview({ r, templateId, styleOverride }) {
     if (!r.skills.length) return null;
     let body;
     if (st.skillsLayout === "bullets") body = <Bullets items={r.skills} />;
-    else if (st.skillsLayout === "columns")
-      body = <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 18 }}>{r.skills.map((s, i) => <div key={i}>{bp.prefix || "• "}{s}</div>)}</div>;
+    else if (st.skillsLayout === "columns") {
+      const cols = Math.max(1, Math.min(4, Number(st.skillsColumns) || 2));
+      body = <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, columnGap: 18 }}>{r.skills.map((s, i) => <div key={i}>{bp.prefix || "• "}{s}</div>)}</div>;
+    }
     else body = <div>{r.skills.join(twoCol ? " · " : " • ")}</div>;
     return <Sec title={SECTION_LABELS.skills}>{body}</Sec>;
   };

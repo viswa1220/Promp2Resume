@@ -85,6 +85,7 @@ export const STYLE_DEFAULTS = {
   projectTechPlacement: "newline", // newline | inline  (tech under the project name vs beside)
   experienceMetaPlacement: "inline", // inline | newline (dates beside role vs below)
   skillsLayout: "inline",          // inline (Go • Python) | bullets | columns
+  skillsColumns: 2,                // 1-4: column count when skillsLayout = "columns"
   bulletStyle: "disc",             // disc | dash | none
   showDividers: true,              // section header rules / borders
 };

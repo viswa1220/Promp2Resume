@@ -85,6 +85,7 @@ export const STYLE_DEFAULTS = {
   projectTechPlacement: "newline", // newline | inline  (tech under the project name vs beside)
   experienceMetaPlacement: "inline", // inline | newline (dates beside role vs below)
   skillsLayout: "inline",          // inline (Go • Python) | bullets | columns
+  skillsColumns: 2,                // 1-4: column count when skillsLayout = "columns"
   bulletStyle: "disc",             // disc | dash | none
   showDividers: true,              // section header rules / borders
 };
@@ -103,6 +104,7 @@ export const STYLE_SCHEMA = `{
   "projectTechPlacement": "newline|inline",
   "experienceMetaPlacement": "inline|newline",
   "skillsLayout": "inline|bullets|columns",
+  "skillsColumns": 1-4,
   "bulletStyle": "disc|dash|none",
   "showDividers": true|false
 }`;

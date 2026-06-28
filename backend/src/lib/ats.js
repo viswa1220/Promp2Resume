@@ -4,6 +4,13 @@ const STOPWORDS = new Set(`a an the and or but if then else for to of in on at b
 
 const TECH_BIGRAMS = ["machine learning","data analysis","data science","data engineering","unit testing","ci cd","rest api","rest apis","version control","object oriented","problem solving","front end","back end","full stack","cloud computing","project management","agile scrum","natural language","computer vision","deep learning","continuous integration"];
 
+// Latin/filler abbreviations and generic connectors that are never real skills.
+// Compared against a dot-stripped form so "e.g." / "eg" / "e.g" all match.
+const JUNK_ABBREV = new Set(["eg","ie","etc","ex","vs","aka","fyi","asap","viz","ergo","etal","ph","na","tbd","wrt","incl","approx","misc","es","ei"]);
+
+// True if the token is a junk abbreviation once dots are removed (e.g. "e.g.").
+const isAbbrevJunk = (t) => JUNK_ABBREV.has(t.replace(/\./g, ""));
+
 function tokenize(s) {
   return (s || "").toLowerCase().replace(/[^a-z0-9+#.\- ]/g, " ").split(/\s+/)
     .map((w) => w.replace(/^[.\-]+|[.\-]+$/g, "")).filter((w) => w && w.length >= 2);
@@ -14,7 +21,11 @@ export function extractKeywords(jd, limit = 24) {
   const lc = jd.toLowerCase();
   const freq = new Map();
   for (const t of tokenize(jd)) {
-    if (STOPWORDS.has(t) || t.length < 3 || /^\d+$/.test(t)) continue;
+    // Skip stopwords, junk abbreviations (e.g., i.e., etc.), too-short tokens,
+    // pure numbers, and dotted fragments that collapse to nothing meaningful.
+    if (STOPWORDS.has(t) || isAbbrevJunk(t) || /^\d+$/.test(t)) continue;
+    const alnum = t.replace(/[^a-z0-9]/g, "");
+    if (alnum.length < 3) continue; // requires 3+ real alphanumerics (so "c#"/"go" still need the bigram/known path)
     freq.set(t, (freq.get(t) || 0) + 1);
   }
   const phrases = TECH_BIGRAMS.filter((bg) => lc.includes(bg));
