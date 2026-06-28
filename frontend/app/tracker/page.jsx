@@ -120,6 +120,8 @@ export default function Tracker() {
             ))}
           </div>
         )}
+
+        <ActivityChart apps={apps} />
       </div>
 
       {open && (
@@ -152,3 +154,50 @@ export default function Tracker() {
 }
 
 function F({ label, children }) { return (<div><label>{label}</label>{children}</div>); }
+
+// GitHub-style contribution heatmap of application activity (last ~6 months).
+function ActivityChart({ apps }) {
+  if (!apps?.length) return null;
+  const dayKey = (dt) => { const x = new Date(dt); x.setHours(0, 0, 0, 0); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+  const counts = {};
+  for (const a of apps) {
+    for (const ds of [a.createdAt, a.dateApplied]) {
+      if (!ds) continue;
+      const t = new Date(ds); if (isNaN(t)) continue;
+      const k = dayKey(t); counts[k] = (counts[k] || 0) + 1;
+    }
+  }
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const start = new Date(today); start.setDate(start.getDate() - 181); start.setDate(start.getDate() - start.getDay()); // align to Sunday
+  const cells = [];
+  for (let dt = new Date(start); dt <= today; dt.setDate(dt.getDate() + 1)) {
+    const k = dayKey(dt); const c = counts[k] || 0;
+    cells.push({ k, c, level: c === 0 ? 0 : c === 1 ? 1 : c === 2 ? 2 : c <= 4 ? 3 : 4 });
+  }
+  const weeks = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthLabels = weeks.map((w, i) => {
+    const first = new Date(w[0].k); const prev = i > 0 ? new Date(weeks[i - 1][0].k) : null;
+    return (!prev || first.getMonth() !== prev.getMonth()) && first.getDate() <= 14 ? MONTHS[first.getMonth()] : "";
+  });
+
+  return (
+    <div className="panel" style={{ marginTop: 14 }}>
+      <div className="panel-title"><h3>Activity</h3><span className="muted" style={{ fontSize: 12 }}>{total} update{total === 1 ? "" : "s"} in the last 6 months</span></div>
+      <div className="heatmap-wrap">
+        <div className="hm-months">{monthLabels.map((m, i) => <span key={i} style={{ minWidth: 15 }}>{m}</span>)}</div>
+        <div className="heatmap">
+          {weeks.map((w, wi) => (
+            <div className="hm-col" key={wi}>
+              {w.map((cell) => <span key={cell.k} className={`hm-cell l${cell.level}`} title={`${cell.k}: ${cell.c} update${cell.c === 1 ? "" : "s"}`} />)}
+            </div>
+          ))}
+        </div>
+        <div className="hm-legend"><span>Less</span><span className="hm-cell l0" /><span className="hm-cell l1" /><span className="hm-cell l2" /><span className="hm-cell l3" /><span className="hm-cell l4" /><span>More</span></div>
+      </div>
+    </div>
+  );
+}

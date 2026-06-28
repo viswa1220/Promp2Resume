@@ -42,7 +42,7 @@ export default function TopBar({ me: meProp }) {
 
   return (
     <header className="topbar">
-      <Link href="/dashboard" className="tb-brand"><Logo size={28} /></Link>
+      <Link href="/" className="tb-brand" aria-label="Prompt2Resume home"><Logo size={28} /></Link>
       <button className="tb-burger" aria-label="Toggle menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         {open ? "✕" : "☰"}
       </button>

@@ -1,13 +1,15 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import TopBar from "@/components/TopBar";
 import { useMe } from "@/lib/useMe";
 import { api } from "@/lib/api";
 
 const TONES = ["Professional & warm", "Story / personal", "Bold & punchy", "Technical / builder"];
 
-export default function LinkedInPage() {
+function LinkedInInner() {
   const { me } = useMe();
+  const params = useSearchParams();
   const [topic, setTopic] = useState("");
   const [notes, setNotes] = useState("");
   const [photoNote, setPhotoNote] = useState("");
@@ -27,6 +29,13 @@ export default function LinkedInPage() {
   const draft = lastPost ? `${lastPost.post}${lastPost.hashtags?.length ? `\n\n${lastPost.hashtags.join(" ")}` : ""}`.trim() : "";
 
   useEffect(() => { threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" }); }, [messages]);
+
+  // Prefill from the Learn section ("Post to LinkedIn" → ?topic=&notes=).
+  useEffect(() => {
+    const t = params.get("topic"); const n = params.get("notes");
+    if (t) setTopic(t); if (n) setNotes(n);
+    // eslint-disable-next-line
+  }, []);
 
   function pickImage(e) {
     const f = e.target.files?.[0];
@@ -147,4 +156,8 @@ export default function LinkedInPage() {
       </div>
     </>
   );
+}
+
+export default function LinkedInPage() {
+  return <Suspense fallback={null}><LinkedInInner /></Suspense>;
 }

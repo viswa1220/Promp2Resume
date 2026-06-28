@@ -26,7 +26,7 @@ export function mapApplication(a) {
   return {
     id: a.id, companyName: a.companyName, jobTitle: a.jobTitle, jobDescription: a.jobDescription || "",
     resumeVersionId: a.resumeVersionId || "", status: a.status, dateApplied: a.dateApplied,
-    followUpDate: a.followUpDate, notes: a.notes || "",
+    followUpDate: a.followUpDate, notes: a.notes || "", createdAt: a.createdAt,
     version: a.version ? { versionName: a.version.versionName, resumeId: a.version.resumeId } : null,
   };
 }
