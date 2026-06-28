@@ -8,6 +8,7 @@ export default function Admin() {
   const { me } = useMe();
   const [users, setUsers] = useState([]);
   const [codes, setCodes] = useState([]);
+  const [usage, setUsage] = useState(null);
   const [forbidden, setForbidden] = useState(false);
   const [code, setCode] = useState({ code: "", type: "daily_unlock", maxUses: 100, expiryDate: "" });
 
@@ -16,6 +17,7 @@ export default function Admin() {
     if (u.status === 403) { setForbidden(true); return; }
     if (u.ok) setUsers(u.data.users);
     const c = await api.get("/admin/promo"); if (c.ok) setCodes(c.data.codes);
+    const g = await api.get("/admin/usage"); if (g.ok) setUsage(g.data);
   }
   useEffect(() => { load(); }, []);
 
@@ -30,6 +32,43 @@ export default function Admin() {
     <>
       <TopBar me={me} />
       <div className="container">
+        {usage && (() => {
+          const pct = (u, lim) => Math.min(100, lim ? Math.round((u / lim) * 100) : 0);
+          const bar = (u, lim) => {
+            const p = pct(u, lim);
+            const color = p >= 100 ? "var(--danger)" : p >= 80 ? "var(--warn)" : "var(--mint)";
+            return (
+              <div style={{ height: 8, borderRadius: 999, background: "var(--surface-2)", overflow: "hidden", marginTop: 8 }}>
+                <div style={{ width: `${p}%`, height: "100%", background: color, transition: "width .4s" }} />
+              </div>
+            );
+          };
+          return (
+            <div className="panel" style={{ marginBottom: 14 }}>
+              <div className="panel-title"><h3>AI spend</h3><button className="btn btn-ghost sm" onClick={load}>Refresh</button></div>
+              <div className="stat-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+                <div className="card">
+                  <div className="lbl">Rolling window ({usage.window.hours}h)</div>
+                  <div className="num" style={{ fontSize: 24, fontFamily: "var(--font-display)" }}>${usage.window.usd.toFixed(2)} <span className="muted" style={{ fontSize: 14 }}>/ ${usage.window.limit}</span></div>
+                  {bar(usage.window.usd, usage.window.limit)}
+                  <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>${usage.window.remaining.toFixed(2)} left before AI pauses</div>
+                </div>
+                <div className="card">
+                  <div className="lbl">This month</div>
+                  <div className="num" style={{ fontSize: 24, fontFamily: "var(--font-display)" }}>${usage.month.usd.toFixed(2)} <span className="muted" style={{ fontSize: 14 }}>/ ${usage.month.limit}</span></div>
+                  {bar(usage.month.usd, usage.month.limit)}
+                  <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>{usage.monthCalls} calls this month</div>
+                </div>
+              </div>
+              {usage.byModel?.length > 0 && (
+                <div className="muted" style={{ fontSize: 12, marginTop: 10 }}>
+                  {usage.byModel.map((m) => `${m.model}: $${m.costUsd.toFixed(2)}`).join("  ·  ")}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         <div className="panel" style={{ marginBottom: 14 }}>
           <div className="panel-title"><h3>Users{pending > 0 && <span className="pill" style={{ marginLeft: 8 }}>{pending} pending</span>}</h3></div>
           <table>

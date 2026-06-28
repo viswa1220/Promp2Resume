@@ -1,9 +1,10 @@
 import AnthropicSDK from "@anthropic-ai/sdk";
 import { anthropicFetch } from "./aiFetch.js";
+import { assertWithinBudget, recordUsage } from "./budget.js";
 
 // AI provider config — server-side only. The key lives in the backend .env
 // (AI_API_KEY); users never see or supply it.
-const MODEL = process.env.AI_MODEL || "claude-opus-4-8";
+const MODEL = process.env.AI_MODEL || "claude-sonnet-4-6";
 
 export function aiConfigured() {
   return !!process.env.AI_API_KEY;
@@ -16,18 +17,25 @@ export class AINotConfiguredError extends Error {
   }
 }
 
-export async function complete({ system, prompt, maxTokens = 3000, temperature }) {
+export async function complete({ system, prompt, maxTokens = 3000, temperature, images, userId = null }) {
   const key = process.env.AI_API_KEY;
   if (!key) throw new AINotConfiguredError();
+  // Spend guard: throws BudgetError if the rolling-window or monthly cap is hit.
+  await assertWithinBudget();
   // maxRetries handles transient network blips; long timeout for slower models.
   // Custom fetch forces IPv4 to avoid "Premature close" from broken IPv6 egress.
   const f = await anthropicFetch();
   const client = new AnthropicSDK({ apiKey: key, maxRetries: 3, timeout: 600000, ...(f ? { fetch: f } : {}) });
+  // When images are supplied, send a multimodal content array (vision).
+  const imgBlocks = (Array.isArray(images) ? images : [])
+    .filter((im) => im && im.data && im.media_type)
+    .map((im) => ({ type: "image", source: { type: "base64", media_type: im.media_type, data: im.data } }));
+  const content = imgBlocks.length ? [...imgBlocks, { type: "text", text: prompt }] : prompt;
   const params = {
     model: MODEL,
     max_tokens: maxTokens,
     system,
-    messages: [{ role: "user", content: prompt }],
+    messages: [{ role: "user", content }],
   };
   // Newer models (e.g. Opus 4.x) reject the deprecated `temperature` param, so
   // we omit it by default. Opt back in with AI_ALLOW_TEMPERATURE=1 on a model
@@ -45,6 +53,8 @@ export async function complete({ system, prompt, maxTokens = 3000, temperature }
     try {
       const stream = client.messages.stream(params);
       const msg = await stream.finalMessage();
+      // Record token usage + cost for the budget tracker (non-blocking).
+      recordUsage(MODEL, msg.usage, userId).catch((e) => console.warn("[budget] record failed:", e?.message));
       return msg.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
     } catch (e) {
       lastErr = e;
