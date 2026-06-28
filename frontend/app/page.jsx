@@ -45,7 +45,43 @@ function useScrollReveal(dep) {
   }, [dep]);
 }
 
-const TEMPLATE_NAMES = ["Classic", "Modern Blue", "Two-Column Sidebar", "Executive", "Technical", "Minimalist", "Academic CV", "Crimson Executive", "Ocean Sidebar", "Charcoal Mono", "Emerald Centered", "Indigo Bar"];
+// Mini template previews for the animated "running layouts" strip.
+const TEMPLATES_MINI = [
+  { name: "Crimson Executive", accent: "#E11D48", tint: "#FFE4E6", layout: "single" },
+  { name: "Ocean Sidebar", accent: "#0EA5E9", tint: "#E0F2FE", layout: "sidebar" },
+  { name: "Charcoal Mono", accent: "#1E293B", tint: "#E2E8F0", layout: "single" },
+  { name: "Emerald Centered", accent: "#10B981", tint: "#D1FAE5", layout: "single" },
+  { name: "Indigo Bar", accent: "#4F46E5", tint: "#E0E7FF", layout: "single" },
+  { name: "Violet Sidebar", accent: "#7C3AED", tint: "#EDE9FE", layout: "sidebar" },
+  { name: "Amber Classic", accent: "#F59E0B", tint: "#FEF3C7", layout: "single" },
+  { name: "Teal Sidebar", accent: "#0D9488", tint: "#CCFBF1", layout: "sidebar" },
+];
+
+function Contact() {
+  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState(null);
+  const upd = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  async function send(e) {
+    e.preventDefault(); setBusy(true); setNote(null);
+    const { ok, data } = await api.post("/contact", form);
+    setBusy(false);
+    if (ok) { setNote({ type: "ok", text: data?.message || "Message sent." }); setForm({ name: "", email: "", message: "" }); }
+    else setNote({ type: "err", text: data?.error || "Could not send — please try again." });
+  }
+  return (
+    <form className="contact-form" onSubmit={send}>
+      {note && <div className={`banner ${note.type === "ok" ? "ok" : "err"}`}>{note.text}</div>}
+      <div className="grid2">
+        <div><label>Name</label><input value={form.name} onChange={upd("name")} placeholder="Your name" /></div>
+        <div><label>Email</label><input type="email" required value={form.email} onChange={upd("email")} placeholder="you@example.com" /></div>
+      </div>
+      <label>Message</label>
+      <textarea rows={4} required value={form.message} onChange={upd("message")} placeholder="How can we help?" />
+      <button className="btn btn-primary" style={{ marginTop: 12 }} disabled={busy}>{busy ? <span className="spinner" /> : "Send message"}</button>
+    </form>
+  );
+}
 
 export default function Landing() {
   const [testimonials, setTestimonials] = useState([]);
@@ -132,47 +168,42 @@ export default function Landing() {
       <section className="container" style={{ paddingTop: 0 }}>
         <div className="feature-grid">
           {[
-            ["✦", "Prompt → resume", "Paste notes or an old resume, add a prompt, and get a structured, ATS-clean draft."],
-            ["◷", "Real ATS score", "A transparent 0–100 score with a checklist and the exact JD keywords you're missing."],
-            ["✎", "Edit by chat", "“Make the summary punchier.” One line edits any section — with undo & edit history."],
-            ["▤", "40 templates", "Single-column, two-column, minimal, executive, technical, long-form CV."],
-            ["◆", "Skill-gap coach", "Grouped gaps plus how to learn each one and a portfolio project idea."],
-            ["✓", "Application tracker", "Log every application: company, role, version, status — all in one board."],
-            ["✸", "Learn by building", "Name any tech and get one practical project plus the exact steps to build it."],
-            ["in", "LinkedIn post generator", "Describe what you did or drop in a screenshot — get a polished post to copy and paste."],
-            ["◴", "Routine planner", "Plan your daily learning, gym and prep — upload, paste, or add tasks in one place."],
-          ].map(([ic, h, p], idx) => (
+            ["✦", "Prompt → resume", "Paste notes or an old resume, add a prompt, and get a structured, ATS-clean draft.", "#6366F1,#4F46E5"],
+            ["◷", "Real ATS score", "A transparent 0–100 score with a checklist and the exact JD keywords you're missing.", "#0EA5E9,#2563EB"],
+            ["✎", "Edit by chat", "“Make the summary punchier.” One line edits any section — with undo & edit history.", "#3B82F6,#6366F1"],
+            ["▤", "40 templates", "Single-column, two-column, minimal, executive, technical, long-form CV.", "#EC4899,#F472B6"],
+            ["◆", "Skill-gap coach", "Grouped gaps plus how to learn each one and a portfolio project idea.", "#F59E0B,#F97316"],
+            ["✓", "Application tracker", "Log every application: company, role, version, status — all in one board.", "#8B5CF6,#7C3AED"],
+            ["✸", "Learn by building", "Turn any topic into a step-by-step roadmap you check off — with a daily streak.", "#10B981,#059669"],
+            ["✍", "LinkedIn generator", "Describe what you did or drop in a screenshot — get a polished post to copy & paste.", "#0A66C2,#2563EB"],
+            ["◴", "Routine planner", "Plan your daily learning, gym and prep — upload, paste, or add tasks in one place.", "#14B8A6,#0D9488"],
+          ].map(([ic, h, p, grad], idx) => (
             <div className={`feature reveal d${(idx % 4) + 1}`} key={h}>
-              <div className="ic">{ic}</div>
+              <div className="ic" style={{ background: `linear-gradient(135deg, ${grad.split(",")[0]}, ${grad.split(",")[1]})`, color: "#fff" }}>{ic}</div>
               <h4>{h}</h4>
               <p>{p}</p>
             </div>
           ))}
         </div>
 
-        {/* Template marquee */}
-        <div className="marquee reveal" style={{ marginTop: "1rem" }}>
-          <div className="track">
-            {[...TEMPLATE_NAMES, ...TEMPLATE_NAMES].map((n, i) => <span className="chip" key={n + i}>{n}</span>)}
+        {/* Animated "running" template previews */}
+        <div className="tpl-head reveal"><span className="kicker">40 templates</span><h3 style={{ margin: ".2rem 0 0" }}>A look for every role</h3></div>
+        <div className="tpl-marquee reveal">
+          <div className="tpl-track">
+            {[...TEMPLATES_MINI, ...TEMPLATES_MINI].map((t, i) => (
+              <div className="tpl-card" key={t.name + i}>
+                <div className="tpl-paper" data-layout={t.layout}>
+                  {t.layout === "sidebar" && <div className="tpl-side" style={{ background: t.tint }}><span className="tpl-avatar" style={{ background: t.accent }} /><span className="tpl-sl" /><span className="tpl-sl" /></div>}
+                  <div className="tpl-main">
+                    <span className="tpl-name" style={{ background: t.accent }} />
+                    <span className="tpl-line" /><span className="tpl-line" /><span className="tpl-line short" />
+                    <span className="tpl-line" /><span className="tpl-line short" />
+                  </div>
+                </div>
+                <div className="tpl-label"><span className="tpl-dot" style={{ background: t.accent }} />{t.name}</div>
+              </div>
+            ))}
           </div>
-        </div>
-      </section>
-
-      <section className="container section" id="how">
-        <h2 className="reveal">Prompt. Tailor. Track.</h2>
-        <p className="lead reveal d1">Three steps from a blank page to an interview-ready resume.</p>
-        <div className="steps">
-          {[
-            ["01", "Prompt", "Describe your background or upload a PDF/DOCX. Add the job description to tailor."],
-            ["02", "Tailor", "The recruiter-AI writes it, scores ATS fit, and surfaces missing keywords — edit by chat."],
-            ["03", "Track", "Download as PDF or DOCX and log the application so you never lose track of versions."],
-          ].map(([n, h, p], idx) => (
-            <div className={`step reveal d${idx + 1}`} key={n}>
-              <div className="n">{n}</div>
-              <h4 style={{ marginTop: 10 }}>{h}</h4>
-              <p className="muted" style={{ margin: 0 }}>{p}</p>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -192,6 +223,35 @@ export default function Landing() {
         </section>
       )}
 
+      <section className="container section" id="how">
+        <h2 className="reveal">Prompt. Tailor. Track.</h2>
+        <p className="lead reveal d1">Three steps from a blank page to an interview-ready resume.</p>
+        <div className="steps">
+          {[
+            ["01", "Prompt", "Describe your background or upload a PDF/DOCX. Add the job description to tailor."],
+            ["02", "Tailor", "The recruiter-AI writes it, scores ATS fit, and surfaces missing keywords — edit by chat."],
+            ["03", "Track", "Download as PDF or DOCX and log the application so you never lose track of versions."],
+          ].map(([n, h, p], idx) => (
+            <div className={`step reveal d${idx + 1}`} key={n}>
+              <div className="n">{n}</div>
+              <h4 style={{ marginTop: 10 }}>{h}</h4>
+              <p className="muted" style={{ margin: 0 }}>{p}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="container section" id="contact">
+        <div className="contact-card reveal">
+          <div className="contact-intro">
+            <span className="kicker">Contact</span>
+            <h2 style={{ margin: ".3rem 0 .4rem" }}>Talk to Prompt2Resume</h2>
+            <p className="muted" style={{ margin: 0 }}>Questions, feedback, or access requests? Send us a message and we'll reply by email.</p>
+          </div>
+          <Contact />
+        </div>
+      </section>
+
       <section className="container section">
         <div className="cta-card reveal">
           <h2>Ready when you are</h2>
@@ -208,6 +268,7 @@ export default function Landing() {
         <nav className="foot-links">
           <Link href="/login?mode=register">Get started</Link>
           <a href="#how">How it works</a>
+          <a href="#contact">Contact</a>
           <Link href="/login">Log in</Link>
         </nav>
         <div className="foot-copy">© {new Date().getFullYear()} Prompt2Resume · Built for job seekers</div>

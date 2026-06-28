@@ -1,22 +1,26 @@
 "use client";
 
-// Prompt2Resume mark: gradient rounded-square "document" with a spark.
+// Prompt2Resume mark: gradient rounded-square with a "prompt" caret turning into
+// resume lines, plus an emerald success spark. Uses the current brand palette.
 export function LogoMark({ size = 40, id = "p2r" }) {
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
       <defs>
-        <linearGradient id={`${id}-g`} x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#8B5CF6" />
-          <stop offset="0.55" stopColor="#7C3AED" />
-          <stop offset="1" stopColor="#6D28D9" />
+        <linearGradient id={`${id}-g`} x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#6366F1" />
+          <stop offset="0.55" stopColor="#4F46E5" />
+          <stop offset="1" stopColor="#7C3AED" />
         </linearGradient>
       </defs>
-      <rect x="6" y="4" width="32" height="40" rx="10" fill={`url(#${id}-g)`} />
-      <rect x="13" y="15" width="18" height="3.4" rx="1.7" fill="#fff" opacity="0.95" />
-      <rect x="13" y="22.5" width="18" height="3.4" rx="1.7" fill="#fff" opacity="0.8" />
-      <rect x="13" y="30" width="11" height="3.4" rx="1.7" fill="#fff" opacity="0.65" />
-      {/* spark */}
-      <path d="M40 8.5 L41.6 12.2 L45.3 13.8 L41.6 15.4 L40 19.1 L38.4 15.4 L34.7 13.8 L38.4 12.2 Z" fill="#22D3EE" />
+      <rect x="4" y="4" width="40" height="40" rx="12" fill={`url(#${id}-g)`} />
+      {/* prompt caret ">" */}
+      <path d="M13 17 L19 24 L13 31" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+      {/* resume lines */}
+      <rect x="23" y="18" width="13" height="3.2" rx="1.6" fill="#fff" opacity="0.95" />
+      <rect x="23" y="24.4" width="13" height="3.2" rx="1.6" fill="#fff" opacity="0.8" />
+      <rect x="23" y="30.8" width="8.5" height="3.2" rx="1.6" fill="#fff" opacity="0.62" />
+      {/* emerald success spark */}
+      <circle cx="38.5" cy="10.5" r="4.2" fill="#10B981" stroke="#fff" strokeWidth="1.6" />
     </svg>
   );
 }
