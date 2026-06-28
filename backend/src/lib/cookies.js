@@ -24,9 +24,10 @@ export const RT = "p2r_rt";
 
 // Sets the httpOnly cookies AND returns the tokens so callers can also send
 // them in the JSON body for token-based (Authorization: Bearer) clients.
-export function setAuthCookies(res, uid) {
-  const token = signAccess(uid);
-  const refreshToken = signRefresh(uid);
+// `tokenVersion` is embedded so the tokens can be revoked server-side.
+export function setAuthCookies(res, uid, tokenVersion = 0) {
+  const token = signAccess(uid, tokenVersion);
+  const refreshToken = signRefresh(uid, tokenVersion);
   res.cookie(AT, token, { ...base(), maxAge: 15 * 60 * 1000 });
   res.cookie(RT, refreshToken, { ...base(), maxAge: 30 * 24 * 60 * 60 * 1000 });
   return { token, refreshToken };

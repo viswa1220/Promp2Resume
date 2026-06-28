@@ -14,6 +14,8 @@ export async function authRequired(req, res, next) {
   if (!d) return res.status(401).json({ error: "Unauthorized" });
   const user = await prisma.user.findUnique({ where: { id: d.uid } });
   if (!user) return res.status(401).json({ error: "Unauthorized" });
+  // Reject tokens minted before the user's tokenVersion was bumped (revoked).
+  if ((d.v || 0) !== (user.tokenVersion || 0)) return res.status(401).json({ error: "Session expired." });
   req.user = user;
   next();
 }
