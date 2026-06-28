@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 export default function Settings() {
   const { me, refresh } = useMe();
   const [name, setName] = useState("");
+  const [dailyEmail, setDailyEmail] = useState(false);
   const [note, setNote] = useState(null);
 
   // Testimonial
@@ -14,6 +15,7 @@ export default function Settings() {
   const [tNote, setTNote] = useState(null);
 
   useEffect(() => { if (me?.user?.name) setName(me.user.name); }, [me]);
+  useEffect(() => { if (me?.user) setDailyEmail(!!me.user.dailyLearningEmail); }, [me]);
   useEffect(() => {
     api.get("/testimonials/mine").then(({ ok, data }) => {
       if (ok && data.testimonial) setT({ name: data.testimonial.name, role: data.testimonial.role || "", text: data.testimonial.text, rating: data.testimonial.rating || 5 });
@@ -23,7 +25,7 @@ export default function Settings() {
 
   async function save() {
     setNote(null);
-    const { ok } = await api.put("/auth/me", { name });
+    const { ok } = await api.put("/auth/me", { name, dailyLearningEmail: dailyEmail });
     setNote(ok ? "Saved." : "Could not save."); refresh();
   }
   async function saveTestimonial() {
@@ -43,6 +45,12 @@ export default function Settings() {
 
           <label>Display name</label>
           <input value={name} onChange={(e) => setName(e.target.value)} />
+
+          <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, cursor: "pointer" }}>
+            <input type="checkbox" style={{ width: "auto" }} checked={dailyEmail} onChange={(e) => setDailyEmail(e.target.checked)} />
+            Email me a daily learning topic{u?.learnTech ? ` (${u.learnTech})` : ""}
+          </label>
+          <p className="muted" style={{ fontSize: 12, marginTop: -4 }}>Based on what you last asked to learn in “Learn by building”.</p>
 
           <div className="btn-row" style={{ marginTop: 14 }}>
             <button className="btn btn-primary" onClick={save}>Save</button>

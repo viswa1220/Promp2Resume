@@ -35,6 +35,8 @@ export function publicUser(u, downloads) {
   return {
     id: u.id, name: u.name, email: u.email, role: u.role, approved: u.approved,
     plan: u.plan, planRenewsAt: u.planRenewsAt,
+    dailyLearningEmail: u.dailyLearningEmail ?? false,
+    learnTech: u.learnTech || "", learnLevel: u.learnLevel || "beginner",
     downloads: downloads || null,
   };
 }
