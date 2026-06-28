@@ -10,11 +10,20 @@ export default function TopBar({ me: meProp }) {
   const router = useRouter();
   const [me, setMe] = useState(meProp || null);
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     if (meProp) return;
     api.get("/auth/me").then(({ ok, data }) => ok && setMe(data));
   }, [meProp]);
+
+  // Add `.scrolled` to the navbar once the page moves past the top (compact + stronger blur/shadow).
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Close the mobile menu whenever the route changes.
   useEffect(() => { setOpen(false); }, [path]);
@@ -41,7 +50,7 @@ export default function TopBar({ me: meProp }) {
   const link = (href, label) => <Link key={href} href={href} className={path === href ? "active" : ""}>{label}</Link>;
 
   return (
-    <header className="topbar">
+    <header className={`topbar ${scrolled ? "scrolled" : ""}`}>
       <Link href="/" className="tb-brand" aria-label="Prompt2Resume home"><Logo size={28} /></Link>
       <button className="tb-burger" aria-label="Toggle menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         {open ? "✕" : "☰"}

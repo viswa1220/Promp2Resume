@@ -85,15 +85,55 @@ function Contact() {
 
 export default function Landing() {
   const [testimonials, setTestimonials] = useState([]);
+  const [scrolled, setScrolled] = useState(false);
+  const [me, setMe] = useState(null);          // current user (null = signed out)
+  const [authChecked, setAuthChecked] = useState(false);
   useScrollReveal(testimonials.length);
   useEffect(() => { api.get("/testimonials").then(({ ok, data }) => { if (ok) setTestimonials(data.testimonials || []); }); }, []);
+  // Detect whether the visitor is already signed in so the navbar/CTAs reflect it
+  // (otherwise a logged-in user lands here and is wrongly asked to log in again).
+  useEffect(() => {
+    api.get("/auth/me")
+      .then(({ ok, data }) => { if (ok) setMe(data); })
+      .catch(() => {})                 // network/backend error → treat as signed out
+      .finally(() => setAuthChecked(true)); // always resolve so the navbar renders
+  }, []);
+  // Compact the navbar (stronger blur/shadow) once the page scrolls past the top.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  async function logout() {
+    await api.post("/auth/logout");
+    api.clearTokens();
+    setMe(null);
+  }
+  const user = me?.user;
+  const startHref = user ? "/builder" : "/login?mode=register";  // CTA target depends on auth
   return (
     <>
-      <div className="topbar">
+      <div className={`topbar lp-topbar ${scrolled ? "scrolled" : ""}`}>
         <Logo size={28} />
+        <nav className="lp-nav">
+          <a href="#features">Features</a>
+          <a href="#how">How it works</a>
+          <a href="#contact">Contact</a>
+        </nav>
         <div className="spacer" />
-        <Link href="/login" className="btn btn-ghost sm">Log in</Link>
-        <Link href="/login?mode=register" className="btn btn-primary sm">Get started</Link>
+        {/* Auth-aware actions: signed-in users see Dashboard + Log out, not Log in. */}
+        {authChecked && (user ? (
+          <>
+            <Link href="/dashboard" className="btn btn-ghost sm">Dashboard</Link>
+            <button className="btn btn-primary sm" onClick={logout}>Log out</button>
+          </>
+        ) : (
+          <>
+            <Link href="/login" className="btn btn-ghost sm">Log in</Link>
+            <Link href="/login?mode=register" className="btn btn-primary sm">Get started</Link>
+          </>
+        ))}
       </div>
 
       <div className="hero-wrap">
@@ -109,7 +149,7 @@ export default function Landing() {
           <p className="sub">The AI resume builder &amp; application tracker. Describe yourself or paste an old
             resume, and a senior-recruiter AI writes, scores, and tailors it — then tracks every application.</p>
           <div className="btn-row" style={{ justifyContent: "center" }}>
-            <Link href="/login?mode=register" className="btn btn-primary">✦ Generate my resume</Link>
+            <Link href={startHref} className="btn btn-primary">✦ Generate my resume</Link>
             <a href="#how" className="btn btn-secondary">See how it works</a>
           </div>
 
@@ -184,7 +224,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="container" style={{ paddingTop: 0 }}>
+      <section className="container" style={{ paddingTop: 0 }} id="features">
         <div className="feature-grid">
           {[
             ["✦", "Prompt → resume", "Paste notes or an old resume, add a prompt, and get a structured, ATS-clean draft.", "#6366F1,#4F46E5"],
@@ -309,7 +349,7 @@ export default function Landing() {
           <h2>Ready when you are</h2>
           <p>Free to start — describe yourself, generate, and download in minutes.</p>
           <div className="btn-row" style={{ justifyContent: "center" }}>
-            <Link href="/login?mode=register" className="btn btn-primary">✦ Generate my resume</Link>
+            <Link href={startHref} className="btn btn-primary">✦ Generate my resume</Link>
             <a href="#how" className="btn btn-secondary">See how it works</a>
           </div>
         </div>
@@ -318,7 +358,7 @@ export default function Landing() {
       <footer className="footer">
         <Logo size={24} />
         <nav className="foot-links">
-          <Link href="/login?mode=register">Get started</Link>
+          <Link href={startHref}>Get started</Link>
           <a href="#how">How it works</a>
           <a href="#contact">Contact</a>
           <Link href="/login">Log in</Link>
