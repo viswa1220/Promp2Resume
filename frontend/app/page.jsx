@@ -96,6 +96,39 @@ export default function Landing() {
         </section>
       </div>
 
+      {/* Animated stats band — counters + SVG ring (count up when in view) */}
+      <section className="container" style={{ paddingTop: 0 }}>
+        <div className="stat-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
+          <div className="stat-card" data-count-wrap style={{ display: "grid", justifyItems: "center", textAlign: "center", gap: 8 }}>
+            <div style={{ position: "relative", width: 104, height: 104 }}>
+              <svg className="fx-ring" width="104" height="104" viewBox="0 0 104 104" aria-hidden="true">
+                <circle cx="52" cy="52" r="44" fill="none" stroke="var(--border-strong)" strokeWidth="9" />
+                <circle cx="52" cy="52" r="44" fill="none" stroke="url(#ringGrad)" strokeWidth="9" strokeLinecap="round" />
+                <defs>
+                  <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stopColor="#FB7185" /><stop offset="0.5" stopColor="#F59E0B" /><stop offset="1" stopColor="#10B981" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
+                <span className="num" data-count="100" data-count-ringmax="100" style={{ fontSize: 28 }}>0</span>
+              </div>
+            </div>
+            <div className="lbl">ATS score · out of 100</div>
+          </div>
+          <div className="stat-card" style={{ textAlign: "center" }}>
+            <div className="num" data-count="40">0</div>
+            <div className="lbl">templates</div>
+            <div className="bar" />
+          </div>
+          <div className="stat-card" style={{ textAlign: "center" }}>
+            <div className="num">PDF · DOCX</div>
+            <div className="lbl">export formats</div>
+            <div className="bar" />
+          </div>
+        </div>
+      </section>
+
       <section className="container" style={{ paddingTop: 0 }}>
         <div className="feature-grid">
           {[
@@ -106,7 +139,7 @@ export default function Landing() {
             ["◆", "Skill-gap coach", "Grouped gaps plus how to learn each one and a portfolio project idea."],
             ["✓", "Application tracker", "Log every application: company, role, version, status — all in one board."],
             ["✸", "Learn by building", "Name any tech and get one practical project plus the exact steps to build it."],
-            ["in", "Post to LinkedIn", "Draft a polished LinkedIn post and publish straight to your profile in one click."],
+            ["in", "LinkedIn post generator", "Describe what you did or drop in a screenshot — get a polished post to copy and paste."],
             ["◴", "Routine planner", "Plan your daily learning, gym and prep — upload, paste, or add tasks in one place."],
           ].map(([ic, h, p], idx) => (
             <div className={`feature reveal d${(idx % 4) + 1}`} key={h}>

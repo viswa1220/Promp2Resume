@@ -1,6 +1,9 @@
 import "./globals.css";
 import { Space_Grotesk, Manrope, JetBrains_Mono } from "next/font/google";
+import ScrollFX from "@/components/ScrollFX";
 
+// Space Grotesk / Manrope load as graceful fallbacks behind the Fontshare
+// Clash Display + Satoshi faces (imported at the top of globals.css).
 const space = Space_Grotesk({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-space", display: "swap" });
 const manrope = Manrope({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-manrope", display: "swap" });
 const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-mono-jb", display: "swap" });
@@ -13,7 +16,14 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${space.variable} ${manrope.variable} ${mono.variable}`}>
-      <body>{children}</body>
+      <body>
+        {/* Fixed mesh-gradient blob background behind the frosted glass (every page) */}
+        <div className="mesh" aria-hidden="true">
+          <span className="b1" /><span className="b2" /><span className="b3" /><span className="b4" />
+        </div>
+        {children}
+        <ScrollFX />
+      </body>
     </html>
   );
 }
