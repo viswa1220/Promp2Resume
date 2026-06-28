@@ -35,6 +35,17 @@ services:
       # Comma-separated list of allowed origins (prod + Vercel preview URLs).
       - key: FRONTEND_URL
         sync: false
+      # This API's own public URL — builds the one-click approve/reject email
+      # links. e.g. https://prompt2resume-api.onrender.com
+      - key: API_URL
+        sync: false
+      # --- Email (Gmail SMTP). GMAIL_APP_PASSWORD is a Google App Password. ---
+      - key: GMAIL_USER
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
 
       # --- Auto-generated once and kept stable across deploys ---
       - key: JWT_ACCESS_SECRET
@@ -44,4 +55,33 @@ services:
 
       # --- Optional ---
       - key: AI_MODEL
-        value: claude-opus-4-8
+        value: claude-sonnet-4-6
+
+  # Daily learning-topic email — runs once a day (13:00 UTC). Emails each
+  # opted-in user a topic personalised from their "Learn by building" profile.
+  - type: cron
+    name: prompt2resume-daily-learning
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: backend
+    schedule: "0 13 * * *"     # daily at 13:00 UTC — adjust to your timezone
+    buildCommand: npm install && npx prisma generate
+    startCommand: npm run daily:learning
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false
+      - key: AI_API_KEY
+        sync: false
+      - key: GMAIL_USER
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: AI_MODEL
+        value: claude-sonnet-4-6
