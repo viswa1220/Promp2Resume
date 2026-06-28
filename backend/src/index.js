@@ -7,7 +7,7 @@ import cron from "node-cron";
 
 import { prisma } from "./db.js";
 import { sendDailyLearningEmails } from "./jobs/dailyLearning.js";
-import { globalLimiter, aiLimiter } from "./middleware/rateLimit.js";
+import { globalLimiter, authLimiter, aiLimiter } from "./middleware/rateLimit.js";
 import { authRequired, approvedRequired } from "./middleware/auth.js";
 import authRoutes from "./routes/auth.js";
 import aiRoutes from "./routes/ai.js";
@@ -17,6 +17,8 @@ import trackerRoutes from "./routes/tracker.js";
 import promoRoutes from "./routes/promo.js";
 import adminRoutes from "./routes/admin.js";
 import approvalsRoutes from "./routes/approvals.js";
+import roadmapRoutes from "./routes/roadmap.js";
+import contactRoutes from "./routes/contact.js";
 import routineRoutes from "./routes/routine.js";
 import testimonialRoutes, { publicTestimonials } from "./routes/testimonials.js";
 
@@ -74,6 +76,9 @@ app.use("/api/promo", gate, promoRoutes);
 app.use("/api/admin", authRequired, adminRoutes);
 // Public capability-token links from the admin email (no auth gate).
 app.use("/api/approvals", approvalsRoutes);
+// Public contact form (rate-limited) → emails the admin.
+app.use("/api/contact", authLimiter, contactRoutes);
+app.use("/api/roadmap", gate, roadmapRoutes);
 app.use("/api/routine", gate, routineRoutes);
 app.use("/api/testimonials", publicTestimonials); // public GET for landing
 app.use("/api/testimonials", gate, testimonialRoutes); // authed /mine routes

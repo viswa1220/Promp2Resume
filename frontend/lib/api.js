@@ -70,6 +70,7 @@ export const api = {
   get: (p) => json(p),
   post: (p, body) => json(p, { method: "POST", body: body !== undefined ? JSON.stringify(body) : undefined }),
   put: (p, body) => json(p, { method: "PUT", body: JSON.stringify(body) }),
+  patch: (p, body) => json(p, { method: "PATCH", body: JSON.stringify(body) }),
   del: (p) => json(p, { method: "DELETE" }),
 
   setTokens,

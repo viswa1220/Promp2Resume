@@ -31,7 +31,12 @@ model User {
   dailyLearningEmail  Boolean   @default(false) // opt-in to the daily learning-topic email
   lastLearningEmailAt DateTime?
 
+  // Learn streak (the "come back daily" hook)
+  learnStreak    Int       @default(0)
+  learnStreakAt  DateTime?
+
   resumes      Resume[]
+  roadmaps     LearningRoadmap[]
   versions     ResumeVersion[]
   downloads    DownloadLog[]
   applications JobApplication[]
@@ -113,6 +118,20 @@ model DownloadLog {
   version ResumeVersion? @relation(fields: [resumeVersionId], references: [id], onDelete: SetNull)
 
   @@index([userId, downloadedAt])
+}
+
+model LearningRoadmap {
+  id        String   @id @default(cuid())
+  userId    String
+  topic     String
+  level     String   @default("beginner")
+  summary   String   @default("")
+  steps     Json     @default("[]") // [{ title, detail, resource, done }]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model AiUsage {
