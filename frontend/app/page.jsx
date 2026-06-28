@@ -113,20 +113,39 @@ export default function Landing() {
             <a href="#how" className="btn btn-secondary">See how it works</a>
           </div>
 
-          {/* Animated prompt -> resume explainer */}
-          <div className="explainer">
-            <div className="exp-card">
-              <div className="lbl">You type</div>
-              <Typewriter />
+          {/* Prompt -> AI writes demo window */}
+          <div className="demo-window reveal">
+            <div className="dw-bar">
+              <span className="dw-dot r" /><span className="dw-dot y" /><span className="dw-dot g" />
+              <span className="dw-title">prompt2resume · draft</span>
             </div>
-            <div className="arrow-mid" aria-hidden>→</div>
-            <div className="exp-card">
-              <div className="lbl">AI writes</div>
-              <div className="exp-line name" />
-              <div className="exp-line s1" />
-              <div className="exp-line s2" />
-              <div className="exp-line s3" />
-              <div className="exp-line s4" />
+            <div className="dw-body">
+              <div className="dw-block">
+                <div className="dw-label">You type</div>
+                <p className="dw-type">Senior frontend engineer, 6 yrs React &amp; design systems. Tailor for a fintech UI role.</p>
+              </div>
+              <div className="dw-arrow" aria-hidden>↓</div>
+              <div className="dw-block">
+                <div className="dw-label accent"><span className="dw-spark">✦</span> AI writes</div>
+                <div className="dw-name">Alex Rivera</div>
+                <div className="dw-role">Senior Frontend Engineer</div>
+                <span className="exp-line s1" /><span className="exp-line s2" /><span className="exp-line s3" />
+              </div>
+              <div className="dw-ats">
+                <div className="dw-ats-ring">
+                  <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden>
+                    <circle cx="28" cy="28" r="23" fill="none" stroke="var(--border-strong)" strokeWidth="6" />
+                    <circle cx="28" cy="28" r="23" fill="none" stroke="url(#heroats)" strokeWidth="6" strokeLinecap="round"
+                      strokeDasharray="144.5" strokeDashoffset="11.6" transform="rotate(-90 28 28)" />
+                    <defs><linearGradient id="heroats" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#4F46E5" /><stop offset="1" stopColor="#10B981" /></linearGradient></defs>
+                  </svg>
+                  <span className="dw-ats-num">92</span>
+                </div>
+                <div>
+                  <div className="dw-ats-l">ATS score</div>
+                  <div className="dw-ats-v">Strong match</div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -201,6 +220,39 @@ export default function Landing() {
                   </div>
                 </div>
                 <div className="tpl-label"><span className="tpl-dot" style={{ background: t.accent }} />{t.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Application tracker showcase */}
+      <section className="container section">
+        <div className="track-demo reveal">
+          <div className="track-demo-head">
+            <div>
+              <h3 style={{ margin: 0, fontSize: 22 }}>Application tracker</h3>
+              <p className="muted" style={{ margin: "4px 0 0", fontSize: 14 }}>Every company, role, version &amp; status in one board.</p>
+            </div>
+            <div className="track-demo-pills">
+              <span className="pill">12 active</span>
+              <span className="pill" style={{ background: "rgba(16,185,129,.12)", color: "#059669", borderColor: "rgba(16,185,129,.3)" }}>3 interviews</span>
+            </div>
+          </div>
+          <div className="track-demo-table">
+            <div className="td-row td-head"><span>Company</span><span>Role</span><span>Version</span><span>Status</span></div>
+            {[
+              ["Stripe", "Frontend Engineer", "v3 · Fintech", "Interview"],
+              ["Linear", "Product Engineer", "v2 · Technical", "Applied"],
+              ["Figma", "Design Engineer", "v4 · Executive", "Interview"],
+              ["Notion", "UI Engineer", "v1 · Modern Blue", "Screening"],
+              ["Vercel", "Frontend Engineer", "v2 · Minimalist", "Applied"],
+            ].map(([co, role, ver, status]) => (
+              <div className="td-row" key={co}>
+                <span className="td-co">{co}</span>
+                <span>{role}</span>
+                <span className="muted">{ver}</span>
+                <span><span className={`td-badge td-${status}`}><span className="td-bdot" />{status}</span></span>
               </div>
             ))}
           </div>
