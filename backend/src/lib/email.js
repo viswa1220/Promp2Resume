@@ -55,8 +55,10 @@ export async function sendEmail(to, subject, text, html, replyTo) {
     return false;
   }
   try {
-    const from = process.env.MAIL_FROM || `Prompt2Resume <${process.env.GMAIL_USER}>`;
-    await t.sendMail({ from, to, subject, text, ...(html ? { html } : {}), ...(replyTo ? { replyTo } : {}) });
+    // Use an explicit {name, address} so the display name always shows.
+    // MAIL_FROM (e.g. "Prompt2Resume <you@gmail.com>") still wins if set.
+    const from = process.env.MAIL_FROM || { name: process.env.MAIL_FROM_NAME || "Prompt2Resume", address: process.env.GMAIL_USER };
+    await t.sendMail({ from, sender: process.env.GMAIL_USER, to, subject, text, ...(html ? { html } : {}), ...(replyTo ? { replyTo } : {}) });
     console.log(`[email] sent "${subject}" to ${to}`);
     return true;
   } catch (err) {
