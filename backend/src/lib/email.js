@@ -23,7 +23,12 @@ function getTransporter() {
   if (!emailConfigured()) return null;
   if (transporter) return transporter;
   transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    // Force IPv4: some hosts (e.g. Render) can't route Gmail's IPv6 SMTP and
+    // fail with "connect ENETUNREACH <ipv6>". `family: 4` resolves to IPv4 only.
+    family: 4,
     auth: {
       user: process.env.GMAIL_USER,
       pass: process.env.GMAIL_APP_PASSWORD, // a Gmail *App Password*, not your login password
