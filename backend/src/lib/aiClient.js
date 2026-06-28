@@ -1,6 +1,6 @@
 import AnthropicSDK from "@anthropic-ai/sdk";
 import { anthropicFetch } from "./aiFetch.js";
-import { assertWithinBudget, recordUsage } from "./budget.js";
+import { assertWithinBudget, recordUsage, assertUserActionLimit } from "./budget.js";
 
 // AI provider config — server-side only. The key lives in the backend .env
 // (AI_API_KEY); users never see or supply it.
@@ -22,6 +22,8 @@ export async function complete({ system, prompt, maxTokens = 3000, temperature, 
   if (!key) throw new AINotConfiguredError();
   // Spend guard: throws BudgetError if the rolling-window or monthly cap is hit.
   await assertWithinBudget();
+  // Per-user product cap (e.g. 15 actions / 3h) — only when attributed to a user.
+  await assertUserActionLimit(userId);
   // maxRetries handles transient network blips; long timeout for slower models.
   // Custom fetch forces IPv4 to avoid "Premature close" from broken IPv6 egress.
   const f = await anthropicFetch();

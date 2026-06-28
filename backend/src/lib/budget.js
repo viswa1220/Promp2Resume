@@ -28,6 +28,43 @@ export class BudgetError extends Error {
   constructor(message) { super(message); this.name = "BudgetError"; this.status = 429; }
 }
 
+// Per-user product usage cap (separate from the admin AI-cost cap). Default:
+// 15 AI actions per rolling 3 hours — this is what we SHOW each user.
+export const USER_LIMIT = () => ({
+  limit: Math.round(num(process.env.USER_ACTION_LIMIT, 15)),
+  hours: num(process.env.USER_ACTION_WINDOW_HOURS, 3),
+});
+
+export class UserLimitError extends Error {
+  constructor(message) { super(message); this.name = "UserLimitError"; this.status = 429; }
+}
+
+// Current per-user usage in the rolling window (for display + enforcement).
+export async function getUserUsage(userId) {
+  if (!userId) return null;
+  const { limit, hours } = USER_LIMIT();
+  const prisma = await getPrisma();
+  const since = new Date(Date.now() - hours * 3600 * 1000);
+  const rows = await prisma.aiUsage.findMany({
+    where: { userId, createdAt: { gte: since } },
+    select: { createdAt: true }, orderBy: { createdAt: "asc" },
+  });
+  const used = rows.length;
+  // A slot frees up `hours` after the oldest in-window action.
+  const resetsAt = used > 0 ? new Date(new Date(rows[0].createdAt).getTime() + hours * 3600 * 1000) : null;
+  return { used, limit, hours, remaining: Math.max(0, limit - used), resetsAt };
+}
+
+// Throws UserLimitError if the user has hit their action cap for the window.
+export async function assertUserActionLimit(userId) {
+  if (!userId || process.env.USER_LIMIT_DISABLED === "1") return;
+  const u = await getUserUsage(userId);
+  if (u && u.used >= u.limit) {
+    const mins = u.resetsAt ? Math.max(1, Math.ceil((u.resetsAt.getTime() - Date.now()) / 60000)) : u.hours * 60;
+    throw new UserLimitError(`You've used your ${u.limit} AI actions. More unlock in about ${mins} min.`);
+  }
+}
+
 function startOfMonth() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); }
 
 export function costOf(inputTokens, outputTokens) {

@@ -41,7 +41,7 @@ metrics in the "gaps" array; mirror JD keywords naturally; keep to 1-2 pages.
 
 ${RESUME_SCHEMA_HINT}`;
   try {
-    const text = await complete({ system: RECRUITER_PERSONA, prompt, maxTokens: 2800 });
+    const text = await complete({ system: RECRUITER_PERSONA, prompt, maxTokens: 2800, userId: req.user?.id });
     res.json({ content: normalizeResume(extractJson(text)) });
   } catch (e) { aiError(res, e); }
 }));
@@ -64,7 +64,7 @@ Apply ONLY what they asked; leave everything else unchanged. Stay truthful — n
 never insert bracketed placeholders into resume text (note missing metrics in "gaps"). Return the COMPLETE updated resume.
 ${RESUME_SCHEMA_HINT}`;
   try {
-    const text = await complete({ system: RECRUITER_PERSONA, prompt, maxTokens: 2800 });
+    const text = await complete({ system: RECRUITER_PERSONA, prompt, maxTokens: 2800, userId: req.user?.id });
     res.json({ content: normalizeResume(extractJson(text)) });
   } catch (e) { aiError(res, e); }
 }));
@@ -112,7 +112,7 @@ invent facts and never insert bracketed placeholders into resume text.
 Return ONLY minified JSON with BOTH objects, echoing anything you did not change:
 {"content": <full resume JSON>, "style": <full style object with every field>}`;
   try {
-    const text = await complete({ system: RECRUITER_PERSONA, prompt, maxTokens: 3000, temperature: 0.3 });
+    const text = await complete({ system: RECRUITER_PERSONA, prompt, maxTokens: 3000, temperature: 0.3, userId: req.user?.id });
     const j = extractJson(text);
     // Whitelist/clamp the model's style so it can never corrupt the layout, and
     // preserve content so a layout edit never drops sections.
@@ -144,7 +144,7 @@ INSTRUCTION: "${instruction}"
 ${jobDescription ? `JOB DESCRIPTION:\n${jobDescription}\n` : ""}
 Stay truthful, concise, ATS-friendly, strong action verbs. Return ONLY minified JSON: ${shape}`;
   try {
-    const text = await complete({ system: RECRUITER_PERSONA, prompt, maxTokens: 2000, temperature: 0.5 });
+    const text = await complete({ system: RECRUITER_PERSONA, prompt, maxTokens: 2000, temperature: 0.5, userId: req.user?.id });
     res.json({ value: extractJson(text).value });
   } catch (e) { aiError(res, e); }
 }));
@@ -182,7 +182,7 @@ Rules: hook in the first line; short, skimmable lines; no clickbait; no invented
 2–4 relevant hashtags at the end. Keep under 1300 characters.
 Return ONLY minified JSON: {"post": string, "hashtags": [string]}`;
   try {
-    const text = await complete({ system: "You are an expert LinkedIn ghostwriter who writes concise, high-engagement posts that sound human.", prompt, maxTokens: 1200, images });
+    const text = await complete({ system: "You are an expert LinkedIn ghostwriter who writes concise, high-engagement posts that sound human.", prompt, maxTokens: 1200, images, userId: req.user?.id });
     const j = extractJson(text);
     res.json({ post: j.post || "", hashtags: Array.isArray(j.hashtags) ? j.hashtags : [] });
   } catch (e) { aiError(res, e); }
@@ -211,7 +211,7 @@ lines, no clickbait, no invented facts, under 1300 characters, with 2–4 releva
 Return ONLY minified JSON: {"post": string, "hashtags": [string], "reply": string}
 where "reply" is one short sentence telling the author what you changed.`;
   try {
-    const text = await complete({ system: "You are an expert LinkedIn ghostwriter who edits posts precisely while keeping the author's voice.", prompt, maxTokens: 1200 });
+    const text = await complete({ system: "You are an expert LinkedIn ghostwriter who edits posts precisely while keeping the author's voice.", prompt, maxTokens: 1200, userId: req.user?.id });
     const j = extractJson(text);
     res.json({ post: j.post || "", hashtags: Array.isArray(j.hashtags) ? j.hashtags : [], reply: j.reply || "Updated the post." });
   } catch (e) { aiError(res, e); }
@@ -243,7 +243,7 @@ Be practical and specific. Return ONLY minified JSON:
   "estimate": string                // rough time estimate, e.g. "1-2 weekends"
 }`;
   try {
-    const text = await complete({ system: "You are a senior engineer and mentor who teaches by building real projects.", prompt, maxTokens: 1600 });
+    const text = await complete({ system: "You are a senior engineer and mentor who teaches by building real projects.", prompt, maxTokens: 1600, userId: req.user?.id });
     const j = extractJson(text);
     res.json({
       project: j.project || "", summary: j.summary || "", whyItTeaches: j.whyItTeaches || "",
@@ -282,7 +282,7 @@ For the top needToLearn gaps add a "learningPlan": how to learn it + a portfolio
 Return ONLY minified JSON:
 {"verdict":string,"alreadyKnow":[string],"needToLearn":[string],"bonus":[string],"keywords":[string],"suggestions":[string],"learningPlan":[{"skill":string,"howToLearn":string,"projectIdea":string}]}`;
   try {
-    const text = await complete({ system: RECRUITER_PERSONA, prompt, maxTokens: 2400, temperature: 0.3 });
+    const text = await complete({ system: RECRUITER_PERSONA, prompt, maxTokens: 2400, temperature: 0.3, userId: req.user?.id });
     const j = extractJson(text);
     res.json({ verdict: j.verdict || "", alreadyKnow: j.alreadyKnow || [], needToLearn: j.needToLearn || [], bonus: j.bonus || [], keywords: j.keywords || [], suggestions: j.suggestions || [], learningPlan: j.learningPlan || [] });
   } catch (e) { aiError(res, e); }

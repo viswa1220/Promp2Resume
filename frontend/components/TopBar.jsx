@@ -27,7 +27,17 @@ export default function TopBar({ me: meProp }) {
 
   const user = me?.user;
   const dl = user?.downloads;
+  const usage = user?.usage;
   const isAdmin = user?.role === "admin";
+  // "resets in" label for the rolling user-action window.
+  const resetsIn = (() => {
+    if (!usage?.resetsAt) return null;
+    const ms = new Date(usage.resetsAt).getTime() - Date.now();
+    if (ms <= 0) return null;
+    const m = Math.ceil(ms / 60000);
+    return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
+  })();
+  const usageLow = usage && usage.remaining <= Math.max(1, Math.round(usage.limit * 0.2));
   const link = (href, label) => <Link key={href} href={href} className={path === href ? "active" : ""}>{label}</Link>;
 
   return (
@@ -49,7 +59,12 @@ export default function TopBar({ me: meProp }) {
           {link("/settings", "Settings")}
         </nav>
         <div className="tb-actions">
-          {dl && <span className="pill"><span className="dot" />{dl.remaining}/{dl.limit} today</span>}
+          {usage && (
+            <span className={`pill ${usageLow ? "pill-warn" : ""}`} title={`AI actions used in the last ${usage.hours}h${resetsIn ? ` · resets in ${resetsIn}` : ""}`}>
+              <span className="dot" />{usage.remaining}/{usage.limit} actions{resetsIn ? ` · ${resetsIn}` : ""}
+            </span>
+          )}
+          {dl && <span className="pill"><span className="dot" />{dl.remaining}/{dl.limit} downloads</span>}
           {user?.plan === "pro" && <span className="pill">PRO</span>}
           {user?.email && <span className="muted tb-email">{user.email}</span>}
           <button className="btn btn-ghost sm" onClick={logout}>Log out</button>

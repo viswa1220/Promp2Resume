@@ -9,6 +9,7 @@ import { publicUser } from "../lib/serialize.js";
 import { emailAdminNewSignup } from "../lib/notify.js";
 import { isValidEmail } from "../lib/recruiter.js";
 import { authLimiter } from "../middleware/rateLimit.js";
+import { getUserUsage } from "../lib/budget.js";
 
 const r = Router();
 
@@ -82,7 +83,8 @@ r.post("/logout", wrap(async (req, res) => {
 }));
 
 r.get("/me", authRequired, wrap(async (req, res) => {
-  res.json({ user: publicUser(req.user, await downloadStatus(req.user)) });
+  const [dl, usage] = await Promise.all([downloadStatus(req.user), getUserUsage(req.user.id)]);
+  res.json({ user: { ...publicUser(req.user, dl), usage } });
 }));
 
 r.put("/me", authRequired, wrap(async (req, res) => {
