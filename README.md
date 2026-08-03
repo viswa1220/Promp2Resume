@@ -1,8 +1,10 @@
-# Prompt2Resume
+# Promp2Resume
 
 **From prompt to polished résumé — in seconds.** An AI resume builder, ATS analyzer and job
 application tracker. A senior-recruiter AI (13 yrs experience) writes, scores and tailors your
 resume; you edit by chat, pick from 30 templates, download PDF/DOCX, and track every application.
+
+🔗 **Live:** https://promp2resume.com
 
 This is a monorepo with a clean **frontend / backend split**:
 
@@ -14,13 +16,29 @@ prompt2resume/
 
 ## Architecture
 
+```mermaid
+flowchart TB
+    U["User"] --> FE["Next.js frontend<br/>landing · dashboard · resume builder"]
+    FE -->|"fetch + httpOnly cookies<br/>(access token auto-refreshes on 401)"| API["Express REST API"]
+
+    subgraph Backend["Backend · Node / Express"]
+        API --> AUTH["JWT auth<br/>access + refresh · bcrypt · admin approval"]
+        API --> AISVC["AI service<br/>generate · edit-by-chat · ATS score · skill-gap · parse"]
+        API --> EXPORT["Export<br/>PDF / DOCX"]
+        API --> ORM["Prisma ORM<br/>owns the schema"]
+    end
+
+    ORM --> DB[("Supabase<br/>Postgres")]
+    AISVC -.->|"server-side AI_API_KEY"| OPENAI["OpenAI API"]
+```
+
 - **Backend** — Node/Express REST API. Prisma ORM owns the schema, so you set `DATABASE_URL`
   once and `npm run setup` creates every table automatically — **you never touch the Supabase SQL
   editor again.** Auth is JWT: short-lived access token + long-lived refresh token, both in
   httpOnly cookies, with bcrypt password hashing and admin approval.
 - **Database** — your Supabase Postgres (just the database; no Supabase Auth, no manual SQL).
 - **Frontend** — Next.js (App Router). Talks to the backend over `fetch` with credentials; the
-  API client auto-refreshes the access token on 401. Prompt2Resume brand kit: violet palette +
+  API client auto-refreshes the access token on 401. Promp2Resume brand kit: violet palette +
   gradient, Space Grotesk / Manrope / JetBrains Mono, animated buttons & text.
 
 ## Setup
@@ -72,4 +90,3 @@ cd backend && npm test       # ATS scoring, PDF/DOCX export, JWT roundtrip, temp
 - Put the frontend and backend on the same site/subdomains so the auth cookies flow; update
   `FRONTEND_URL` (backend CORS) and `NEXT_PUBLIC_API_URL` (frontend) accordingly.
 - Payments (Stripe) and Supabase Storage archival are intentionally left as next steps.
-# Resume2Prompt
