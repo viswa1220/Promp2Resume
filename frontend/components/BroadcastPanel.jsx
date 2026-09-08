@@ -10,7 +10,7 @@ I built it to write better resumes. What I kept running into is that writing was
 
 So I'm adding the missing half. It's called Buildora: you say what you're trying to learn, and it puts you with someone building that thing, so the two of you finish something real. Your account carries over. Nothing you have now goes away.
 
-It opens in January. If you want in early, just reply "in" and I'll put you on the list.
+I'm shipping it one piece at a time rather than disappearing for six months. If you want to see each piece as it lands, just reply "in".
 
 And if you'd give me 15 minutes to tell me what you were actually trying to do when you signed up, I'd take that over almost anything else right now.
 

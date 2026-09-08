@@ -224,3 +224,22 @@ model BroadcastSend {
   @@unique([broadcastId, userId])
   @@index([broadcastId])
 }
+
+
+// ---------------------------------------------------------------------------
+// Waitlist - people who want the next thing before it exists.
+//
+// Deliberately not a relation to User: most of these are strangers who have no
+// account yet, and the ones who do can sign up again without anything special
+// happening. Email is unique, so a second submission is a no-op rather than a
+// duplicate.
+// ---------------------------------------------------------------------------
+
+model WaitlistSignup {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  source    String   @default("landing")
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

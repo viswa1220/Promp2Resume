@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Logo, LogoMark } from "@/components/Logo";
 import { api } from "@/lib/api";
 
+import WaitlistTeaser from "@/components/WaitlistTeaser";
 const PHRASES = ["build me a resume", "tailor it to this job", "make me stand out"];
 
 function Typewriter() {
@@ -314,6 +315,8 @@ export default function Landing() {
           </div>
         </section>
       )}
+
+      <WaitlistTeaser />
 
       <section className="container section" id="how">
         <h2 className="reveal">Prompt. Tailor. Track.</h2>

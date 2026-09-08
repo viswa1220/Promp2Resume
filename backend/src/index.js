@@ -18,6 +18,7 @@ import promoRoutes from "./routes/promo.js";
 import adminRoutes from "./routes/admin.js";
 import broadcastRoutes from "./routes/broadcasts.js";
 import unsubscribeRoutes from "./routes/unsubscribe.js";
+import waitlistRoutes from "./routes/waitlist.js";
 import approvalsRoutes from "./routes/approvals.js";
 import roadmapRoutes from "./routes/roadmap.js";
 import contactRoutes from "./routes/contact.js";
@@ -81,6 +82,10 @@ app.use("/api/admin", authRequired, adminRoutes);
 
 // Public: an unsubscribe link must work from an email client, with no login.
 app.use("/api/unsubscribe", unsubscribeRoutes);
+
+// Public, and rate limited - anything anonymous that writes to the database is
+// something a bored person will run in a loop.
+app.use("/api/waitlist", authLimiter, waitlistRoutes);
 // Public capability-token links from the admin email (no auth gate).
 app.use("/api/approvals", approvalsRoutes);
 // Public contact form (rate-limited) → emails the admin.
