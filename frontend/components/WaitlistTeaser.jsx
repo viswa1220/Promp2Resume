@@ -13,6 +13,12 @@ export default function WaitlistTeaser() {
     api.get("/waitlist/count").then(({ ok, data }) => {
       if (ok) { setCount(data.count); setShowFrom(data.showFrom); }
     });
+    // Arriving from an email? The link carries their address, so the form is
+    // already filled and the whole thing is one click.
+    try {
+      const e = new URLSearchParams(window.location.search).get("e");
+      if (e) setEmail(e);
+    } catch { /* no window, no query - nothing to prefill */ }
   }, []);
 
   async function join(e) {
@@ -32,7 +38,7 @@ export default function WaitlistTeaser() {
       : "Be one of the first";
 
   return (
-    <section className="container section" style={{ paddingTop: 0 }}>
+    <section id="waitlist" className="container section" style={{ paddingTop: 0, scrollMarginTop: 90 }}>
       <div
         className="panel reveal"
         style={{
@@ -49,11 +55,12 @@ export default function WaitlistTeaser() {
             <span className="pill">Coming next</span>
             <span className="muted" style={{ fontSize: 12 }}>{line}</span>
           </div>
-          <h3 style={{ margin: "0 0 4px", fontSize: "1.05rem" }}>Buildora</h3>
+          <h3 style={{ margin: "0 0 4px", fontSize: "1.05rem" }}>Find someone to build with</h3>
           <p className="muted" style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>
-            A better resume starts with something worth putting on it. Buildora
-            puts you with someone building the thing you want to learn. Shipping
-            one piece at a time — join and you'll see each one as it lands.
+            A better resume starts with something worth putting on it. Tell us
+            what you're trying to learn and we'll put you with someone building
+            that thing. Shipping one piece at a time — join and you'll see each
+            one as it lands.
           </p>
         </div>
 

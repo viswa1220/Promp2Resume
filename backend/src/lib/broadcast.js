@@ -13,6 +13,10 @@ function apiBase() {
   return (process.env.API_URL || "http://localhost:4000").replace(/\/+$/, "");
 }
 
+function siteBase() {
+  return (process.env.FRONTEND_URL || "http://localhost:3000").replace(/\/+$/, "");
+}
+
 /**
  * Fill in the merge field and append the unsubscribe footer.
  *
@@ -35,8 +39,14 @@ export async function ensureUnsubscribeToken(user) {
 export function renderBody(body, user, token) {
   const name = (user.name || "").trim().split(" ")[0] || "there";
   const url = `${apiBase()}/api/unsubscribe/${token}`;
+
+  // {waitlist} becomes a link that already knows who they are, so the form on
+  // the landing page opens with their address filled in. Every field you can
+  // remove between "interested" and "done" is people you don't lose.
+  const waitlist = `${siteBase()}/?e=${encodeURIComponent(user.email)}#waitlist`;
+
   return (
-    body.replaceAll("{name}", name) +
+    body.replaceAll("{name}", name).replaceAll("{waitlist}", waitlist) +
     `\n\n—\nYou're receiving this because you have a Promp2Resume account.\n` +
     `Unsubscribe: ${url}\n`
   );

@@ -4,17 +4,22 @@ import { api } from "@/lib/api";
 
 const DRAFT = `Hi {name},
 
-You used Promp2Resume a while back, so you should hear this from me before anyone else.
+You used Promp2Resume a while back, so you should hear this before anyone else.
 
-I built it to write better resumes. What I kept running into is that writing wasn't the problem for most people - a thin experience section was. You can't write your way out of not having built anything.
+The resume builder was version one, and always meant to be. Writing the resume is the last step of something longer, and it can only ever be as good as what's behind it. A thin experience section was never a writing problem.
 
-So I'm adding the missing half. It's called Buildora: you say what you're trying to learn, and it puts you with someone building that thing, so the two of you finish something real. Your account carries over. Nothing you have now goes away.
+So version two is the part that comes before it 🛠️
 
-I'm shipping it one piece at a time rather than disappearing for six months. If you want to see each piece as it lands, just reply "in".
+You tell it what you're trying to learn, and it puts you with someone building that thing, so the two of you finish something real. Then there's something worth writing about. Your account carries over - nothing you have now goes away ✅
 
-And if you'd give me 15 minutes to tell me what you were actually trying to do when you signed up, I'd take that over almost anything else right now.
+The learning roadmap and the streak you've already got were part of this from the start. The rest lands one piece at a time rather than in one big relaunch.
 
-- Viswanathan`;
+Want to see each one as it ships? Add yourself here 👇
+{waitlist}
+
+- Promp2Resume
+
+P.S. If you'd spare 15 minutes to tell me what you were actually trying to do when you signed up, just hit reply. I'd take that over almost anything else right now.`;
 
 export default function BroadcastPanel() {
   const [audience, setAudience] = useState(0);
@@ -83,7 +88,7 @@ export default function BroadcastPanel() {
           style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 13, lineHeight: 1.6 }}
         />
         <div className="muted" style={{ fontSize: 12 }}>
-          {"{name}"} becomes their first name. The unsubscribe footer is added automatically - you don't write it.
+          {"{name}"} becomes their first name. {"{waitlist}"} becomes a waitlist link with their email already filled in. The unsubscribe footer is added automatically.
         </div>
         <div>
           <button className="btn" disabled={busy} onClick={saveDraft}>Save draft</button>

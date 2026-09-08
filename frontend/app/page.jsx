@@ -143,6 +143,22 @@ export default function Landing() {
           <div className="badges fade-up">
             <span className="pill"><span className="dot" />AI · ATS-aware</span>
             <span className="pill">40 templates</span>
+            {/* Version two. Small on purpose - it sits above the fold without
+                competing with "Generate my resume", which is still what most
+                visitors came for. */}
+            <a
+              href="#waitlist"
+              className="pill"
+              style={{
+                cursor: "pointer",
+                textDecoration: "none",
+                borderColor: "var(--violet-600)",
+                color: "var(--violet-600)",
+                fontWeight: 600,
+              }}
+            >
+              ✦ Version two — join the waitlist
+            </a>
           </div>
           <div className="logo-badge fade-up"><LogoMark size={84} /></div>
           <h1 className="fade-up">prompt<span style={{ color: "var(--violet-600)" }}>2</span>resume</h1>
