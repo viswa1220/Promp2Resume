@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import TopBar from "@/components/TopBar";
 import { useMe } from "@/lib/useMe";
 import { api } from "@/lib/api";
+import BroadcastPanel from "@/components/BroadcastPanel";
 
 export default function Admin() {
   const { me } = useMe();
@@ -68,6 +69,8 @@ export default function Admin() {
             </div>
           );
         })()}
+
+        <BroadcastPanel />
 
         <div className="panel" style={{ marginBottom: 14 }}>
           <div className="panel-title"><h3>Users{pending > 0 && <span className="pill" style={{ marginLeft: 8 }}>{pending} pending</span>}</h3></div>

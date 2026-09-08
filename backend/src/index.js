@@ -16,6 +16,8 @@ import downloadRoutes from "./routes/download.js";
 import trackerRoutes from "./routes/tracker.js";
 import promoRoutes from "./routes/promo.js";
 import adminRoutes from "./routes/admin.js";
+import broadcastRoutes from "./routes/broadcasts.js";
+import unsubscribeRoutes from "./routes/unsubscribe.js";
 import approvalsRoutes from "./routes/approvals.js";
 import roadmapRoutes from "./routes/roadmap.js";
 import contactRoutes from "./routes/contact.js";
@@ -73,7 +75,12 @@ app.use("/api/resumes", gate, resumeRoutes);
 app.use("/api/download", gate, downloadRoutes);
 app.use("/api/tracker", gate, trackerRoutes);
 app.use("/api/promo", gate, promoRoutes);
+// Mounted before /api/admin so the more specific path wins.
+app.use("/api/admin/broadcasts", authRequired, broadcastRoutes);
 app.use("/api/admin", authRequired, adminRoutes);
+
+// Public: an unsubscribe link must work from an email client, with no login.
+app.use("/api/unsubscribe", unsubscribeRoutes);
 // Public capability-token links from the admin email (no auth gate).
 app.use("/api/approvals", approvalsRoutes);
 // Public contact form (rate-limited) → emails the admin.
